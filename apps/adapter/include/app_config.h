@@ -1,7 +1,9 @@
 #ifndef APP_CONFIG_H
 #define APP_CONFIG_H
 
-
+#ifdef LITEEMF_ENABLED
+#include "hw_config.h"
+#endif
 
 
 
@@ -14,7 +16,7 @@
 
 //用户选择earphone 或者 dongle
 #ifndef CONFIG_DUPLEX_ROLE_SEL		//APP_WIRELESS_MASTER APP_WIRELESS_SLAVE
-#define CONFIG_DUPLEX_ROLE_SEL		APP_WIRELESS_MASTER
+#define CONFIG_DUPLEX_ROLE_SEL		APP_WIRELESS_SLAVE 
 #endif
 
 //用户板级功能配置

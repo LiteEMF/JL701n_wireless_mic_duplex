@@ -28,6 +28,11 @@
 #include "app_power_manage.h"
 #include "asm/power/power_port.h"
 
+#ifdef LITEEMF_ENABLED
+#include "app/emf.h"
+#include "api/api_log.h"
+#endif
+
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
 #define LOG_ERROR_ENABLE
@@ -770,6 +775,15 @@ const struct low_power_param power_param = {
 
 
 /************************** PWR config ****************************/
+#ifdef KEY_POWER_GPIO
+struct port_wakeup port0 = {
+	.pullup_down_enable = (POWER_KEY_PULL == PIN_PULLNONE)? DISABLE: ENABLE,                            //配置I/O 内部上下拉是否使能
+	.edge               = POWER_KEY_ACTIVE? FALLING_EDGE:RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+    .both_edge          = 0,
+	.iomap              = KEY_POWER_GPIO,         //唤醒口选择
+    .filter             = PORT_FLT_8ms,
+};
+#else
 struct port_wakeup port0 = {
     .pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
     .edge       = FALLING_EDGE,                            //唤醒方式选择,可选：上升沿\下降沿
@@ -778,6 +792,8 @@ struct port_wakeup port0 = {
     /* .attribute  = BLUETOOTH_RESUME,                        //保留参数 */
     .iomap      = IO_PORTB_01,                             //唤醒口选择
 };
+#endif
+
 #if TCFG_CHARGE_ENABLE
 struct port_wakeup charge_port = {
     .edge               = RISING_EDGE,                       //唤醒方式选择,可选：上升沿\下降沿
@@ -799,6 +815,14 @@ struct port_wakeup ldoin_rise_port = {
     .filter             = PORT_FLT_4ms,
     .iomap              = IO_LDOIN_DET,                      //唤醒口选择
 };
+#elif defined KEY_USB_DET_GPIO              //适配外部充电
+struct port_wakeup usbdet_port = {
+	.pullup_down_enable     = DISABLE,                          //配置I/O 内部上下拉是否使能
+	.edge                   = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.both_edge              = DISABLE,                          //保留参数
+	.filter                 = PORT_FLT_16ms,
+    .iomap                  = KEY_USB_DET_GPIO,       			 //唤醒口选择
+};
 #endif
 
 const struct wakeup_param wk_param = {
@@ -807,8 +831,9 @@ const struct wakeup_param wk_param = {
     .aport[0] = &charge_port,
     .aport[1] = &vbat_port,
     .aport[2] = &ldoin_rise_port,
+#elif defined KEY_USB_DET_GPIO && (PIN_NULL != KEY_USB_DET_GPIO)
+    .port[2] = &usbdet_port,
 #endif
-
 };
 
 void gSensor_wkupup_disable(void)
@@ -1139,6 +1164,10 @@ void board_set_soft_poweroff(void)
     gpio_set_dieh(IO_PORT_DM, 0);
 
     dac_power_off();
+
+    #if defined LITEEMF_ENABLED && API_PM_ENABLE 
+    api_weakup_init();
+    #endif
 }
 #define     APP_IO_DEBUG_0(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT &= ~BIT(x);}
 #define     APP_IO_DEBUG_1(i,x)       //{JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT |= BIT(x);}

@@ -17,6 +17,8 @@
 #include "app_charge.h"
 #include "asm/charge.h"
 
+#if !defined LITEEMF_ENABLED || !API_USBD_BIT_ENABLE
+
 #if TCFG_USB_SLAVE_ENABLE
 #ifndef  USB_PC_NO_APP_MODE
 #include "app_task.h"
@@ -419,6 +421,8 @@ void usbstack_exit()
 {
     unregister_sys_event_handler(pc_device_event_handler);
 }
+#endif
+
 #endif
 
 #endif

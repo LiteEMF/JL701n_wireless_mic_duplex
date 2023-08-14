@@ -13,6 +13,10 @@
 #include "adapter_idev_usb.h"
 #include "usb/device/hid.h"
 #include "adapter_wireless_command.h"
+#ifdef LITEEMF_ENABLED
+#include "api/bt/api_bt.h"
+#include "api/api_log.h"
+#endif
 
 #if (APP_MAIN ==  APP_WIRELESS_DUPLEX && WIRELESS_ROLE_SEL == APP_WIRELESS_MASTER)
 
@@ -378,6 +382,11 @@ void app_main_run(void)
         struct adapter_pro *pro = adapter_process_open(idev, odev, media, dongle_event_handle_callback);//event_handle_callback 用户想拦截处理的事件
 
         ASSERT(pro, "adapter_process_open fail!!\n");
+
+        #ifdef LITEEMF_ENABLED
+        extern void liteemf_app_start(void);
+        liteemf_app_start();
+        #endif
 
         //执行(包括事件解析、事件执行、媒体启动/停止, HID等事件转发)
         adapter_process_run(pro);

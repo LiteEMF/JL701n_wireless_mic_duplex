@@ -22,7 +22,7 @@
 #include "btstack/le/le_common_define.h"
 
 //--------------------------------------------
-#define LE_DEBUG_PRINT_EN               0     // log switch
+#define LE_DEBUG_PRINT_EN               1    // log switch
 //--------------------------------------------
 
 #define ADV_SCAN_MS(_ms)                ((_ms) * 8 / 5)

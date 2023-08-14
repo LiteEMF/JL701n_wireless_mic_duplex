@@ -84,8 +84,9 @@ Date：
 #endif
 
 
-
+#ifndef BIT
 #define     BIT(n)              (1UL << (n))
+#endif
 #define     BitSET(REG,POS)     ((REG) |= (1L << (POS)))
 #define     BitCLR(REG,POS)     ((REG) &= (~(1L<< (POS))))
 #define     BitXOR(REG,POS)     ((REG) ^= (~(1L << (POS))))

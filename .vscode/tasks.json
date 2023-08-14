@@ -33,6 +33,26 @@
             "command": "make ac701n -j`nproc`",
             "problemMatcher": [],
             "group": "build"
+        },
+        {
+            "label": "ac701n_LiteEMF",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac701n_LiteEMF"
+            },
+            "command": "make ac701n_LiteEMF -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac701n_LiteEMF",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac701n_LiteEMF"
+            },
+            "command": "make clean_ac701n_LiteEMF -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
         }
         ,{
             "label": "adapter_duplex",

@@ -105,7 +105,7 @@ static void app_init()
     if (!UPDATE_SUPPORT_DEV_IS_NULL()) {
         update = update_result_deal();
     }
-#if TCFG_PC_ENABLE&&TCFG_OTG_USB_DEV_EN
+#if TCFG_PC_ENABLE&&TCFG_OTG_USB_DEV_EN && !defined LITEEMF_ENABLED
     usbstack_init();
 #endif
 

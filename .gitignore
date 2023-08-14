@@ -59,14 +59,14 @@ cscope.out
 *.fw
 
 
-sdk/cpu/**/tools/**/*.bin
-sdk/cpu/**/tools/*.txt
-sdk/cpu/**/tools/**/*.cfg
-sdk/cpu/**/tools/*.ini
-sdk/cpu/**/tools/*.lst
-sdk/cpu/**/tools/uboot.boot
-sdk/cpu/**/tools/uboot_no_ota.boot
-sdk/cpu/**/tools/download.bat
-sdk/cpu/**/*.used
-sdk/cpu/**/download
-sdk/objs
+cpu/**/tools/**/*.bin
+cpu/**/tools/*.txt
+cpu/**/tools/**/*.cfg
+cpu/**/tools/*.ini
+cpu/**/tools/*.lst
+cpu/**/tools/uboot.boot
+cpu/**/tools/uboot_no_ota.boot
+cpu/**/tools/download.bat
+cpu/**/*.used
+# cpu/**/download
+objs

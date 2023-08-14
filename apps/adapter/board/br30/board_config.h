@@ -1,6 +1,10 @@
 #ifndef BOARD_CONFIG_H
 #define BOARD_CONFIG_H
 
+#ifdef LITEEMF_ENABLED
+#include "hw_config.h"
+#endif
+
 //不导出不需要头文件
 // FOLLOW-INC: OFF
 

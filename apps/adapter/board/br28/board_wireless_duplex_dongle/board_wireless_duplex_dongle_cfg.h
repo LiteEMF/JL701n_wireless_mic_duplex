@@ -54,20 +54,26 @@
 //*********************************************************************************//
 #define TCFG_UART0_ENABLE					ENABLE_THIS_MOUDLE                     //串口打印模块使能
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT                         //串口接收脚配置（用于打印可以选择NO_CONFIG_PORT）
+#ifndef TCFG_UART0_TX_PORT
 #define TCFG_UART0_TX_PORT  				IO_PORTC_05                            //串口发送脚配置
+#endif
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
 //*********************************************************************************//
 //                                 USB 配置                                        //
 //*********************************************************************************//
 #if (WIRELESS_EARPHONE_MIC_EN)
+#ifndef TCFG_PC_ENABLE
 #define TCFG_PC_ENABLE                      0
+#endif
 #define USB_MALLOC_ENABLE                   0
 #define USB_PC_NO_APP_MODE                  0
 #define USB_MEM_NO_USE_OVERLAY_EN		    0
 #define USB_DEVICE_CLASS_CONFIG             0
 #else
+#ifndef TCFG_PC_ENABLE
 #define TCFG_PC_ENABLE                      1
+#endif
 #define USB_MALLOC_ENABLE                   1
 #define USB_PC_NO_APP_MODE                  1
 #define USB_MEM_NO_USE_OVERLAY_EN		    1
@@ -98,8 +104,9 @@
 //*********************************************************************************//
 //                                 iokey 配置                                      //
 //*********************************************************************************//
+#ifndef TCFG_IOKEY_ENABLE
 #define TCFG_IOKEY_ENABLE					ENABLE_THIS_MOUDLE //是否使能IO按键
-
+#endif
 #define TCFG_IOKEY_POWER_CONNECT_WAY		ONE_PORT_TO_LOW    //按键一端接低电平一端接IO
 
 #define TCFG_IOKEY_POWER_ONE_PORT			IO_PORTB_01        //IO按键端口
@@ -112,7 +119,9 @@
 //*********************************************************************************//
 //                                 adkey 配置                                      //
 //*********************************************************************************//
+#ifndef TCFG_ADKEY_ENABLE
 #define TCFG_ADKEY_ENABLE                   DISABLE_THIS_MOUDLE//是否使能AD按键
+#endif
 #define TCFG_ADKEY_LED_IO_REUSE				DISABLE_THIS_MOUDLE	//ADKEY 和 LED IO复用，led只能设置蓝灯显示
 #define TCFG_ADKEY_IR_IO_REUSE				DISABLE_THIS_MOUDLE	//ADKEY 和 红外IO复用
 #define TCFG_ADKEY_LED_SPI_IO_REUSE			DISABLE_THIS_MOUDLE	//ADKEY 和 LED SPI IO复用
@@ -171,24 +180,36 @@
 //*********************************************************************************//
 //                                  充电参数配置                                   //
 //*********************************************************************************//
+#ifndef TCFG_CHARGE_ENABLE
 #define TCFG_CHARGE_ENABLE					DISABLE_THIS_MOUDLE
+#endif
 #define TCFG_TEST_BOX_ENABLE				ENABLE_THIS_MOUDLE
+#ifndef TCFG_CHARGESTORE_PORT
 #define TCFG_CHARGESTORE_PORT				IO_PORTP_00
+#endif
 //是否支持开机充电
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE
 //是否支持拔出充电自动开机功能
 #define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
 #define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4199
+#ifndef TCFG_CHARGE_FULL_MA
 #define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_15
+#endif
 /*恒流充电电流可选配置*/
+#ifndef TCFG_CHARGE_MA
 #define TCFG_CHARGE_MA						CHARGE_mA_60
+#endif
 /*涓流充电电流配置*/
+#ifndef TCFG_CHARGE_TRICKLE_MA
 #define TCFG_CHARGE_TRICKLE_MA              CHARGE_mA_10
+#endif
 
 //*********************************************************************************//
 //                                  低功耗配置                                     //
 //*********************************************************************************//
+#ifndef TCFG_LOWPOWER_POWER_SEL
 #define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15                   //电源模式设置，可选DCDC和LDO
+#endif
 
 //*********************************************************************************//
 //                                 Audio配置                                       //
@@ -350,7 +371,9 @@ DAC硬件上的连接方式,可选的配置：
 //*********************************************************************************//
 //                                  PWM_LED 配置                                       //
 //******************************************************************************
+#ifndef TCFG_PWMLED_ENABLE
 #define TCFG_PWMLED_ENABLE					ENABLE_THIS_MOUDLE			//是否支持PMW LED推灯模块
+#endif
 #define TCFG_PWMLED_IOMODE					LED_ONE_IO_MODE				//LED模式，单IO还是两个IO推灯
 #define TCFG_PWMLED_PIN						IO_PORTB_06					//LED使用的IO口 注意和led7是否有io冲突
 

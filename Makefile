@@ -9,12 +9,12 @@
 # make ac701n
 # make adapter_duplex
 
-.PHONY: all clean ac701n adapter_duplex clean_ac701n clean_adapter_duplex
+.PHONY: all clean ac701n ac701n_LiteEMF adapter_duplex clean_ac701n ac701n_LiteEMF clean_adapter_duplex
 
-all: ac701n adapter_duplex
+all: ac701n ac701n_LiteEMF adapter_duplex
 	@echo +ALL DONE
 
-clean: clean_ac701n clean_adapter_duplex
+clean: clean_ac701n  clean_ac701n_LiteEMF clean_adapter_duplex
 	@echo +CLEAN DONE
 
 ac701n:
@@ -22,6 +22,12 @@ ac701n:
 
 clean_ac701n:
 	$(MAKE) -C apps/adapter/board/br28 -f Makefile clean
+
+ac701n_LiteEMF:
+	$(MAKE) -C apps/adapter/board/br28 -f Makefile_LiteEMF
+
+clean_ac701n_LiteEMF:
+	$(MAKE) -C apps/adapter/board/br28 -f Makefile_LiteEMF clean
 
 adapter_duplex:
 	$(MAKE) -C apps/adapter/board/br30 -f Makefile
