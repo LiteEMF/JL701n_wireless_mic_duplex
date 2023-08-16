@@ -13,7 +13,7 @@
 
 #include "asm/dac.h"
 
-extern const u32 config_vendor_le_bb;
+extern u32 config_vendor_le_bb;
 extern struct audio_dac_hdl dac_hdl;
 #if (APP_MAIN == APP_WIRELESS_DUPLEX && WIRELESS_ROLE_SEL == APP_WIRELESS_SLAVE)
 #define ADAPTER_WIRELESS_FRAME_LBUF_SIZE		(150*5)

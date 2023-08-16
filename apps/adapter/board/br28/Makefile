@@ -291,6 +291,7 @@ c_SRC_FILES := \
 	../../../../apps/adapter/common/bt_common/bt_product_test.c \
 	../../../../apps/adapter/common/bt_common/bt_status_event.c \
 	../../../../apps/adapter/common/bt_common/dongle_1t2.c \
+	../../../../apps/adapter/common/bt_common/app_comm_ble.c \
 	../../../../apps/adapter/common/dev_status.c \
 	../../../../apps/adapter/common/init.c \
 	../../../../apps/adapter/common/task_table.c \
@@ -401,6 +402,7 @@ c_SRC_FILES := \
 	../../../../apps/common/third_party_profile/jieli/trans_data_demo/le_trans_data.c \
 	../../../../apps/common/third_party_profile/jieli/wireless_mic/le_wireless_mic_client.c \
 	../../../../apps/common/third_party_profile/jieli/wireless_mic/le_wireless_mic_server.c \
+	../../../../apps/common/third_party_profile/jieli/wireless_mic/le_hogp.c \
 	../../../../apps/common/update/norflash_ufw_update.c \
 	../../../../apps/common/update/norflash_update.c \
 	../../../../apps/common/update/testbox_update.c \

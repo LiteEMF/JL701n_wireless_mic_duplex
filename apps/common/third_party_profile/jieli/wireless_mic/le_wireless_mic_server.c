@@ -48,7 +48,7 @@ extern void printf_buf(u8 *buf, u32 len);
 
 //共配置的RAM
 #define ATT_RAM_BUFSIZE           (ATT_CTRL_BLOCK_SIZE + ATT_LOCAL_MTU_SIZE + ATT_SEND_CBUF_SIZE)                   //note:
-static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
+u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
 //---------------
 
 
@@ -62,7 +62,7 @@ static u8 att_ram_buffer[ATT_RAM_BUFSIZE] __attribute__((aligned(4)));
 #define HOLD_LATENCY_CNT_ALL  (0xffff)
 
 
-static volatile hci_con_handle_t con_handle;
+volatile hci_con_handle_t con_handle;
 #if WIRELESS_PAIR_BONDING
 
 #define PAIR_DIREDT_ADV_EN         1
@@ -70,6 +70,7 @@ static volatile hci_con_handle_t con_handle;
 #define BLE_VM_TAIL_TAG           (0x5CB9)
 static u16 adv_interval_val;       //广播周期 (unit:0.625ms)
 #define REPEAT_DIRECT_ADV_COUNT  (2)// *1.28s
+#endif
 struct pair_info_t {
     u16 head_tag;             //头标识
     u8  pair_flag: 2;         //配对信息是否有效
@@ -78,19 +79,25 @@ struct pair_info_t {
     u8  peer_address_info[7]; //绑定的对方地址信息
     u16 tail_tag;//尾标识
 };
-static struct pair_info_t  conn_pair_info;
-static u8 cur_peer_address_info[7];
+struct pair_info_t  conn_pair_info;
+u8 cur_peer_address_info[7];
 
-#endif
-
+u8 flag_user_private = 1;
+u8 sm_setup_init_flag = 1;
+extern u8 standard_appearance[2];
+extern int standard_adv_interval_min_val;
+extern void standard_cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+extern uint16_t standard_att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+extern int standard_att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+extern void standard_cbk_sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 //加密设置
 /* static const uint8_t sm_min_key_size = 7; */
 
 //连接参数更新请求设置
 //是否使能参数请求更新,0--disable, 1--enable
-static const uint8_t connection_update_enable = 1; ///0--disable, 1--enable
+uint8_t connection_update_enable = 1; ///0--disable, 1--enable
 //当前请求的参数表index
-static uint8_t connection_update_cnt = 0; //
+uint8_t connection_update_cnt = 0;
 
 //参数表
 static const struct conn_update_param_t connection_param_table[] = {
@@ -156,7 +163,6 @@ static ble_state_e get_ble_work_state(void)
     return ble_work_state;
 }
 
-#if WIRELESS_PAIR_BONDING
 static void conn_pair_vm_do(struct pair_info_t *info, u8 rw_flag)
 {
 #if PAIR_DIREDT_ADV_EN
@@ -212,11 +218,11 @@ void clear_bonding_info(void)
             bt_ble_adv_enable(0);
             bt_ble_adv_enable(1);
         } else if (con_handle) {
-            ble_disconnect();
+            ble_disconnect(NULL);
         }
     }
 }
-#endif
+
 
 static void send_request_connect_parameter(u8 table_index)
 {
@@ -262,7 +268,6 @@ static void set_ble_work_state(ble_state_e state)
         }
     }
 }
-
 
 
 static void cbk_sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
@@ -337,7 +342,7 @@ static void set_connection_data_phy(u8 tx_phy, u8 rx_phy)
     ble_op_set_ext_phy(con_handle, all_phys, tx_phy, rx_phy, phy_options);
 }
 
-static void server_profile_start(u16 con_handle)
+void server_profile_start(u16 con_handle)
 {
     ble_op_att_send_init(con_handle, att_ram_buffer, ATT_RAM_BUFSIZE, ATT_LOCAL_MTU_SIZE);
     set_ble_work_state(BLE_ST_CONNECT);
@@ -452,6 +457,10 @@ static void cbk_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             }
             connection_update_cnt = 0;
             ble_auto_shut_down_enable(1);
+			if (!flag_user_private) {	//private2standard
+				ble_disconnect_complete_sw(flag_user_private);
+			}
+
             break;
 
         case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
@@ -689,8 +698,12 @@ static int make_set_adv_data(void)
 
     offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)gap_device_name, name_len);
 #else
-    offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, 0xAF30, 2);
-
+    if(flag_user_private){
+        offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, 0xAF30, 2);
+    }else{
+        offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, 0x1812, 2);
+        offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_APPEARANCE_DATA, standard_appearance, 2);
+    }
 #endif
     if (offset > ADV_RSP_PACKET_MAX) {
         puts("***adv_data overflow!!!!!!\n");
@@ -734,8 +747,11 @@ static void advertisements_setup_init()
     uint8_t adv_channel = ADV_CHANNEL_ALL;
     int   ret = 0;
 
-    ble_op_set_adv_param(ADV_INTERVAL_MIN, adv_type, adv_channel);
-
+	if (flag_user_private) {
+		ble_op_set_adv_param(ADV_INTERVAL_MIN, adv_type, adv_channel);
+	} else {
+		ble_op_set_adv_param(standard_adv_interval_min_val, adv_type, adv_channel);
+	}
     ret |= make_set_adv_data();
     ret |= make_set_rsp_data();
 
@@ -786,7 +802,11 @@ void ble_sm_setup_init(io_capability_t io_type, u8 auth_req, uint8_t min_key_siz
     sm_set_authentication_requirements(auth_req);
     sm_set_encryption_key_size_range(min_key_size, 16);
     sm_set_request_security(security_en);
-    sm_event_callback_set(&cbk_sm_packet_handler);
+	if (flag_user_private) {
+		sm_event_callback_set(&cbk_sm_packet_handler);
+	} else {
+		sm_event_callback_set(&standard_cbk_sm_packet_handler);
+	}
 
     if (io_type == IO_CAPABILITY_DISPLAY_ONLY) {
         reset_PK_cb_register(reset_passkey_cb);
@@ -835,27 +855,46 @@ void ble_profile_init(void)
     printf("ble profile init\n");
     le_device_db_init();
 
+    if(sm_setup_init_flag){
 #if PASSKEY_ENTER_ENABLE
     ble_sm_setup_init(IO_CAPABILITY_DISPLAY_ONLY, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, MIC_TCFG_BLE_SECURITY_EN);
 #else
     ble_sm_setup_init(IO_CAPABILITY_NO_INPUT_NO_OUTPUT, SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING, 7, MIC_TCFG_BLE_SECURITY_EN);
 #endif
+        sm_setup_init_flag = 0;
+    }
 
-    /* setup ATT server */
-    att_server_init(profile_data, att_read_callback, att_write_callback);
-    att_server_register_packet_handler(cbk_packet_handler);
-    /* gatt_client_register_packet_handler(packet_cbk); */
+	if (flag_user_private) {
+		log_info("private");
+		/* setup ATT server */
+        att_server_init(profile_data, att_read_callback, att_write_callback);
+        att_server_register_packet_handler(cbk_packet_handler);
+        /* gatt_client_register_packet_handler(packet_cbk); */
 
-#ifdef CONFIG_ADAPTER_ENABLE
+        #ifdef CONFIG_ADAPTER_ENABLE
+        wlm_tx_testbox_comm_init();
+        #else
+        // register for HCI events
+        hci_event_callback_set(&cbk_packet_handler);
+        /* ble_l2cap_register_packet_handler(packet_cbk); */
+        /* sm_event_packet_handler_register(packet_cbk); */
+        le_l2cap_register_packet_handler(&cbk_packet_handler);
+        #endif
 
-    wlm_tx_testbox_comm_init();
-#else
-    // register for HCI events
-    hci_event_callback_set(&cbk_packet_handler);
-    /* ble_l2cap_register_packet_handler(packet_cbk); */
-    /* sm_event_packet_handler_register(packet_cbk); */
-    le_l2cap_register_packet_handler(&cbk_packet_handler);
-#endif
+	} else {
+		log_info("standard");
+		/* setup ATT server */
+		att_server_init(hogp_profile_data, standard_att_read_callback, standard_att_write_callback);
+		att_server_register_packet_handler(standard_cbk_packet_handler);
+		/* gatt_client_register_packet_handler(packet_cbk); */
+		// register for HCI events
+		hci_event_callback_set(&standard_cbk_packet_handler);
+		/* ble_l2cap_register_packet_handler(packet_cbk); */
+		/* sm_event_packet_handler_register(packet_cbk); */
+		le_l2cap_register_packet_handler(&standard_cbk_packet_handler);
+
+	}
+
     ble_vendor_set_default_att_mtu(ATT_LOCAL_MTU_SIZE);
 }
 
@@ -931,7 +970,11 @@ static int get_buffer_vaild_len(void *priv)
 
 static int app_send_user_data_do(void *priv, u8 *data, u16 len)
 {
-    return app_send_user_data(ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE, data, len, ATT_OP_AUTO_READ_CCC);
+	if (flag_user_private) {
+		return app_send_user_data(ATT_CHARACTERISTIC_ae02_01_VALUE_HANDLE, data, len, ATT_OP_AUTO_READ_CCC);
+	} else {
+		return app_send_user_data(HID_REPORT_ID_01_SEND_HANDLE, data, len, ATT_OP_AUTO_READ_CCC);
+	}
 }
 
 static int app_send_user_data_check(u16 len)
@@ -982,8 +1025,13 @@ u8 *ble_get_adv_data_ptr(u16 *len)
 
 u8 *ble_get_gatt_profile_data(u16 *len)
 {
-    *len = sizeof(profile_data);
-    return (u8 *)profile_data;
+	if (flag_user_private) {
+		*len = sizeof(profile_data);
+		return (u8 *)profile_data;
+	} else {
+		*len = sizeof(hogp_profile_data);
+		return (u8 *)hogp_profile_data;
+	}
 }
 
 
@@ -1074,7 +1122,9 @@ void bt_ble_init(void)
 #endif
 
 #if (WIRELESS_24G_ENABLE)
-    rf_set_24g_hackable_coded(WIRELESS_24G_CODE_ID);
+	if (flag_user_private) {
+		rf_set_24g_hackable_coded(WIRELESS_24G_CODE_ID);
+	}
 #endif
 
     set_ble_work_state(BLE_ST_INIT_OK);
@@ -1115,6 +1165,25 @@ void ble_server_send_test_key_num(u8 key_num)
     ;
 }
 
+
+//hogp fix
+void hogp_set_ble_work_state(ble_state_e state)
+{
+    set_ble_work_state(state);
+}
+
+int hogp_app_send_user_data(u16 handle, u8 *data, u16 len, u8 handle_type)
+{
+    return app_send_user_data(handle, data, len, handle_type);
+}
+void hogp_conn_pair_vm_do(struct pair_info_t *info, u8 rw_flag)
+{
+    conn_pair_vm_do(info, rw_flag);
+}
+void hogp_can_send_now_wakeup(void)
+{
+    can_send_now_wakeup();
+}
 #endif
 
 

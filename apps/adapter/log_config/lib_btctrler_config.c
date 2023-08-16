@@ -184,19 +184,19 @@ const uint64_t config_btctler_le_features = LE_ENCRYPTION |
 #endif /* WIRELESS_HIGH_BW_EN */
         0;
 
-const u32 config_vendor_le_bb = VENDOR_BB_MD_CLOSE |
-                                VENDOR_BB_CONNECT_SLOT |
-                                VENDOR_BB_ADV_PDU_INT(3) |
-                                VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
-                                VENDOR_BB_NEW_SCAN_STRATEGY |
-                                VENDOR_BB_TS |
+u32 config_vendor_le_bb = VENDOR_BB_MD_CLOSE |
+                          VENDOR_BB_CONNECT_SLOT |
+                          VENDOR_BB_ADV_PDU_INT(3) |
+                          VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
+                          VENDOR_BB_NEW_SCAN_STRATEGY |
+                          VENDOR_BB_TS |
 #if WIRELESS_HIGH_BW_EN
-                                VENDOR_BB_HIGH_BW |
+                          VENDOR_BB_HIGH_BW |
 #endif /* WIRELESS_HIGH_BW_EN */
-                                0;
+                          0;
 #else /* APP_MAIN == APP_WIRELESS_MIC_2T1 */
 const uint64_t config_btctler_le_features = LE_ENCRYPTION | LE_DATA_PACKET_LENGTH_EXTENSION | LE_2M_PHY;
-const u32 config_vendor_le_bb = 0;
+u32 config_vendor_le_bb = 0;
 #endif /* APP_MAIN == APP_WIRELESS_MIC_2T1 */
 
 #if WIRELESS_2t1_RX_ONLY_CONN_1TX
@@ -223,11 +223,11 @@ const int config_btctler_le_acl_total_nums    = 12;
 
 const int config_btctler_le_roles         = (LE_ADV | LE_SLAVE | LE_SCAN | LE_INIT | LE_MASTER);
 const uint64_t config_btctler_le_features = LE_ENCRYPTION | LE_DATA_PACKET_LENGTH_EXTENSION | LE_2M_PHY;
-const u32 config_vendor_le_bb = VENDOR_BB_MD_CLOSE |
-                                VENDOR_BB_CONNECT_SLOT |
-                                VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
-                                VENDOR_BB_TS |
-                                0;
+u32 config_vendor_le_bb = VENDOR_BB_MD_CLOSE |
+                          VENDOR_BB_CONNECT_SLOT |
+                          VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
+                          VENDOR_BB_TS |
+                          0;
 
 const int config_btctler_le_master_multilink = 0; // Master multi-link
 
@@ -259,16 +259,15 @@ const uint64_t config_btctler_le_features = LE_ENCRYPTION |
 const uint64_t config_btctler_le_features = LE_ENCRYPTION | LE_DATA_PACKET_LENGTH_EXTENSION | LE_2M_PHY;
 #endif /* (APP_MAIN == APP_WIRELESS_MIC_2T1) */
 
-const u32 config_vendor_le_bb = VENDOR_BB_MD_CLOSE |
-                                VENDOR_BB_CONNECT_SLOT |
-                                VENDOR_BB_ADV_PDU_INT(3) |
-                                VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
-                                VENDOR_BB_TS |
+u32 config_vendor_le_bb = VENDOR_BB_MD_CLOSE |
+                          VENDOR_BB_CONNECT_SLOT |
+                          VENDOR_BB_ADV_PDU_INT(3) |
+                          VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
+                          VENDOR_BB_TS |
 #if WIRELESS_HIGH_BW_EN
-                                VENDOR_BB_HIGH_BW |
+                          VENDOR_BB_HIGH_BW |
 #endif /* WIRELESS_HIGH_BW_EN */
-                                0;
-
+                          0;
 const int config_btctler_le_master_multilink = 0; // Master multi-link
 const int config_btctler_le_afh_en           = 0; // Master AFH
 /* LE RAM Control */
@@ -283,7 +282,7 @@ const int config_btctler_le_acl_total_nums    = 2;
 
 const int config_btctler_le_roles            = (LE_SCAN | LE_INIT | LE_MASTER);
 const uint64_t config_btctler_le_features    = LE_ENCRYPTION;
-const u32 config_vendor_le_bb                = 0;
+u32 config_vendor_le_bb                = 0;
 const int config_btctler_le_master_multilink = 0; // Master multi-link
 
 #if TCFG_WIFI_DETECT_ENABLE
@@ -304,12 +303,12 @@ const int config_btctler_le_acl_total_nums    = 5;
 
 const int config_btctler_le_roles         = (LE_ADV | LE_SCAN | LE_INIT | LE_SLAVE | LE_MASTER);
 const uint64_t config_btctler_le_features = LE_CORE_V50_FEATURES;
-const u32 config_vendor_le_bb = VENDOR_BB_PIS_EN |
-                                VENDOR_BB_MD_CLOSE |
-                                VENDOR_BB_PIS_HB |
-                                VENDOR_BB_PIS_TX_PAYLOAD_LEN(55) |
-                                VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
-                                0;
+u32 config_vendor_le_bb = VENDOR_BB_PIS_EN |
+                          VENDOR_BB_MD_CLOSE |
+                          VENDOR_BB_PIS_HB |
+                          VENDOR_BB_PIS_TX_PAYLOAD_LEN(55) |
+                          VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
+                          0;
 const int config_btctler_le_master_multilink = 0; // Master multi-link
 const int config_btctler_le_afh_en           = 0; // Master AFH
 /* LE RAM Control */
@@ -324,13 +323,13 @@ const int config_btctler_le_acl_total_nums    = 2;
 
 const int config_btctler_le_roles         = (LE_ADV | LE_SCAN | LE_SLAVE | LE_INIT | LE_MASTER);
 const uint64_t config_btctler_le_features = LE_CORE_V50_FEATURES;
-const u32 config_vendor_le_bb = VENDOR_BB_PIS_EN |
-                                VENDOR_BB_MD_CLOSE |
-                                VENDOR_BB_PIS_HB_M |
-                                VENDOR_BB_ADV_PDU_INT(2) |
-                                VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
-                                VENDOR_BB_PIS_TX_PAYLOAD_LEN(107) |
-                                0;
+u32 config_vendor_le_bb = VENDOR_BB_PIS_EN |
+                          VENDOR_BB_MD_CLOSE |
+                          VENDOR_BB_PIS_HB_M |
+                          VENDOR_BB_ADV_PDU_INT(2) |
+                          VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
+                          VENDOR_BB_PIS_TX_PAYLOAD_LEN(107) |
+                          0;
 const int config_btctler_le_master_multilink = 0; // Master multi-link
 const int config_btctler_le_afh_en           = 0; // Master AFH
 /* LE RAM Control */
@@ -345,13 +344,13 @@ const int config_btctler_le_acl_total_nums    = 5;// 2;
 
 const int config_btctler_le_roles         = (LE_ADV | LE_SCAN | LE_SLAVE | LE_INIT | LE_MASTER);
 const uint64_t config_btctler_le_features = LE_CORE_V50_FEATURES;
-const u32 config_vendor_le_bb = VENDOR_BB_PIS_EN |
-                                VENDOR_BB_MD_CLOSE |
-                                VENDOR_BB_PIS_HB |
-                                VENDOR_BB_PIS_HB_R |
-                                VENDOR_BB_PIS_TX_PAYLOAD_LEN(55) |
-                                VENDOR_BB_RX_PAYLOAD_LEN(55) |
-                                0;
+u32 config_vendor_le_bb = VENDOR_BB_PIS_EN |
+                          VENDOR_BB_MD_CLOSE |
+                          VENDOR_BB_PIS_HB |
+                          VENDOR_BB_PIS_HB_R |
+                          VENDOR_BB_PIS_TX_PAYLOAD_LEN(55) |
+                          VENDOR_BB_RX_PAYLOAD_LEN(55) |
+                          0;
 const int config_btctler_le_master_multilink = 0; // Master multi-link
 const int config_btctler_le_afh_en           = 0; // Master AFH
 /* LE RAM Control */
@@ -366,13 +365,13 @@ const int config_btctler_le_acl_total_nums    = 2;
 
 const int config_btctler_le_roles         = (LE_ADV | LE_SCAN | LE_SLAVE | LE_INIT | LE_MASTER);
 const uint64_t config_btctler_le_features = LE_CORE_V50_FEATURES;
-const u32 config_vendor_le_bb = VENDOR_BB_PIS_EN |
-                                VENDOR_BB_MD_CLOSE |
-                                VENDOR_BB_PIS_HB_M |
-                                VENDOR_BB_ADV_PDU_INT(2) |
-                                VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
-                                VENDOR_BB_PIS_TX_PAYLOAD_LEN(107) |
-                                0;
+u32 config_vendor_le_bb = VENDOR_BB_PIS_EN |
+                          VENDOR_BB_MD_CLOSE |
+                          VENDOR_BB_PIS_HB_M |
+                          VENDOR_BB_ADV_PDU_INT(2) |
+                          VENDOR_BB_RX_PAYLOAD_LEN(TCFG_SERVER_RX_PAYLOAD_LEN) |
+                          VENDOR_BB_PIS_TX_PAYLOAD_LEN(107) |
+                          0;
 const int config_btctler_le_master_multilink = 0; // Master multi-link
 const int config_btctler_le_afh_en           = 0; // Master AFH
 /* LE RAM Control */
@@ -385,7 +384,7 @@ const int config_btctler_le_acl_total_nums    = 5;// 2;
 
 const int config_btctler_le_roles             = (LE_ADV | LE_SLAVE);
 const uint64_t config_btctler_le_features     = LE_ENCRYPTION;
-const u32 config_vendor_le_bb                 = 0;
+u32 config_vendor_le_bb                 = 0;
 const int config_btctler_le_master_multilink  = 0; // Master multi-link
 const int config_btctler_le_afh_en            = 0; // Master AFH
 /* LE RAM Control */
@@ -400,7 +399,7 @@ const int config_btctler_le_acl_total_nums    = 5;
 
 const int config_btctler_le_roles             = 0;
 const uint64_t config_btctler_le_features     = 0;
-const u32 config_vendor_le_bb                 = 0;
+u32 config_vendor_le_bb                 = 0;
 const int config_btctler_le_master_multilink  = 0; // Master multi-link
 const int config_btctler_le_afh_en            = 0; // Master AFH
 /* LE RAM Control */

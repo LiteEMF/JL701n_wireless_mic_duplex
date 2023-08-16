@@ -389,6 +389,11 @@ DAC硬件上的连接方式,可选的配置：
 
 #if TCFG_USER_BLE_ENABLE
 
+
+#ifndef TRANS_MULTI_BLE_SM_ENABLE
+#define TRANS_MULTI_BLE_SM_ENABLE         1 /*配置加密 en*/
+#endif
+
 /*蓝牙BLE多连接*/
 #define TRANS_MULTI_BLE_EN                0 /*蓝牙BLE多连 ENABLE*/
 #if TRANS_MULTI_BLE_EN

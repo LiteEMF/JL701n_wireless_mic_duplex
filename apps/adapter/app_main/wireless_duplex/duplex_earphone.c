@@ -927,13 +927,16 @@ void app_main_run(void)
     clk_set("sys", (48 * 1000000L));
     ui_update_status(STATUS_POWERON);
     audio_adc_init(&adc_hdl, &adc_data);
-printf("tone\n");
     earphone_tone_play(TONE_POWER_ON, 1);
-printf("tone start\n");
     while (wl_mic_tone_get_dec_status() == TONE_START) {
         os_time_dly(1);
     }
-printf("tone end\n");
+
+    #ifdef LITEEMF_ENABLED
+    extern void liteemf_app_start(void);
+    liteemf_app_start();
+    #endif
+
     while (1) {
         //初始化
         adapter_adc_init();
@@ -948,11 +951,6 @@ printf("tone end\n");
 
         ASSERT(pro, "adapter_process_open fail!!\n");
         wireless_mic_media = media;
-
-        #ifdef LITEEMF_ENABLED
-        extern void liteemf_app_start(void);
-        liteemf_app_start();
-        #endif
 
         //执行(包括事件解析、事件执行、媒体启动/停止, HID等事件转发)
         adapter_process_run(pro);

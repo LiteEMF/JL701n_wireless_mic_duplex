@@ -152,9 +152,9 @@ extern "C" {
 #endif
 
 #if (BT0_SUPPORT & BIT_ENUM(TR_BLE)) && BLE_HID_SUPPORT
-#define CONFIG_BT_SM_SUPPORT_ENABLE        	1
+#define TRANS_MULTI_BLE_SM_ENABLE        	1
 #else
-#define CONFIG_BT_SM_SUPPORT_ENABLE        	0
+#define TRANS_MULTI_BLE_SM_ENABLE        	0
 #endif
 
 #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))

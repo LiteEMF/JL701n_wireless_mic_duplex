@@ -58,7 +58,7 @@ cscope.out
 *.ufw
 *.fw
 
-
+cpu/**/tools/*.bin
 cpu/**/tools/**/*.bin
 cpu/**/tools/*.txt
 cpu/**/tools/**/*.cfg

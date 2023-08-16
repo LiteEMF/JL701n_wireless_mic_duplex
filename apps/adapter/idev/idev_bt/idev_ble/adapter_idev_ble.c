@@ -68,10 +68,11 @@ static void adapter_ble_status_callback(void *priv, ble_state_e status)
     case BLE_ST_CONNECT:
         break;
     case BLE_ST_DISCONN:
-    case BLE_ST_SEND_DISCONN:
         adapter_process_event_notify(ADAPTER_EVENT_DISCONN, 0);
         adapter_process_event_notify(ADAPTER_EVENT_IDEV_MEDIA_CLOSE, 0);
-        break;
+		break;
+    case BLE_ST_SEND_DISCONN:
+		break;
     case BLE_ST_NOTIFY_IDICATE:
         break;
     case BLE_ST_CONNECTION_UPDATE_OK:
