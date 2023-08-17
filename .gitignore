@@ -57,6 +57,7 @@ cscope.out
 *.bc
 *.ufw
 *.fw
+*.used
 
 cpu/**/tools/*.bin
 cpu/**/tools/**/*.bin
@@ -67,6 +68,6 @@ cpu/**/tools/*.lst
 cpu/**/tools/uboot.boot
 cpu/**/tools/uboot_no_ota.boot
 cpu/**/tools/download.bat
-cpu/**/*.used
+
 # cpu/**/download
 objs

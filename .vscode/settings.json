@@ -17,6 +17,13 @@
 		"km_typedef.h": "c",
 		"app_comm_bt.h": "c",
 		"update_loader_download.h": "c",
-		"ble_hogp_profile.h": "c"
+		"ble_hogp_profile.h": "c",
+		"wl_mic_api.h": "c",
+		"api_bt.h": "c",
+		"hid_dev_desc.h": "c",
+		"bt_driver.h": "c",
+		"api_transport.h": "c",
+		"emf_typedef.h": "c",
+		"3th_profile_api.h": "c"
 	}
 }

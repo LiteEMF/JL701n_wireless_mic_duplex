@@ -1167,6 +1167,12 @@ void ble_server_send_test_key_num(u8 key_num)
 
 
 //hogp fix
+
+bool hogp_is_bonded(void)
+{
+    return conn_pair_info.pair_flag;
+}
+
 void hogp_set_ble_work_state(ble_state_e state)
 {
     set_ble_work_state(state);

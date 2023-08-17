@@ -22,6 +22,14 @@
 #include "third_party/wireless_mic/wl_mic_api.h"
 #include "update_loader_download.h"
 
+#ifdef LITEEMF_ENABLED
+#include "api/bt/api_bt.h"
+#include "api/api_log.h"
+#endif
+
+#if (TCFG_BLE_DEMO_SELECT == DEF_BLE_DEMO_WIRELESS_MIC_SERVER)
+
+
 #if LE_DEBUG_PRINT_EN
 extern void printf_buf(u8 *buf, u32 len);
 /* #define log_info          printf */
@@ -105,7 +113,7 @@ static const u8 System_ID[] = {0, 0, 0, 0, 0, 0, 0, 0};
 #define  PNP_PID          0x022C //
 #define  PNP_PID_VERSION  0x011b //1.1.11
 
-static const u8 PnP_ID[] = {PNP_VID_SOURCE, PNP_VID & 0xFF, PNP_VID >> 8, PNP_PID & 0xFF, PNP_PID >> 8, PNP_PID_VERSION & 0xFF, PNP_PID_VERSION >> 8};
+static u8 PnP_ID[] = {PNP_VID_SOURCE, PNP_VID & 0xFF, PNP_VID >> 8, PNP_PID & 0xFF, PNP_PID >> 8, PNP_PID_VERSION & 0xFF, PNP_PID_VERSION >> 8};
 /* static const u8 PnP_ID[] = {0x02, 0x17, 0x27, 0x40, 0x00, 0x23, 0x00}; */
 /* static const u8 PnP_ID[] = {0x02, 0xac, 0x05, 0x2c, 0x02, 0x1b, 0x01}; */
 
@@ -209,6 +217,18 @@ static void standard_connection_update_complete_success(u8 *packet, u8 connected
     log_info("conn_latency = %d\n", conn_latency);
     log_info("conn_timeout = %d\n", conn_timeout);
 	log_info("connected_init=%d",connected_init);
+
+    #if defined LITEEMF_ENABLED
+    api_bt_ctb_t* bt_ctbp;
+    if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
+        bt_ctbp = api_bt_get_ctb(BT_BLE_RF);
+    }else{
+        bt_ctbp = api_bt_get_ctb(BT_BLE);
+    }
+    if(NULL != bt_ctbp){
+        bt_ctbp->inteval = conn_interval;
+    }
+    #endif
     if (connected_init) {
         if (conn_pair_info.pair_flag
             && (conn_latency && (0 == memcmp(conn_pair_info.peer_address_info, packet - 1, 7)))) { //
@@ -292,7 +312,8 @@ void standard_cbk_sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8
 
 static void check_report_map_change(void)
 {
-	#if 0 //部分手机不支持
+    //部分手机不支持
+	#if 0 
 	if (hid_report_change && first_pair_flag && att_get_ccc_config(ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE)) {
 		log_info("###send services changed\n");
 		hogp_app_send_user_data(ATT_CHARACTERISTIC_2a05_01_VALUE_HANDLE, change_handle_table, 4, ATT_OP_INDICATE);
@@ -637,6 +658,19 @@ uint16_t standard_att_read_callback(hci_con_handle_t connection_handle, uint16_t
             break;
         }
         if (buffer) {
+            #if defined LITEEMF_ENABLED && (BLE_HID_SUPPORT & HID_GAMEPAD_MASK)
+            api_bt_ctb_t* bt_ctbp;
+            uint16_t vid=PNP_VID,pid=PNP_PID;
+            bt_ctbp = api_bt_get_ctb(BT_BLE);
+            if(NULL != bt_ctbp){
+                app_gamepad_get_special_vid((trp_t)BT_BLE, bt_ctbp->hid_types, &vid, &pid);
+                PnP_ID[1] = vid & 0xFF;
+                PnP_ID[2] = vid >> 8;
+                PnP_ID[3] = pid & 0xFF;
+                PnP_ID[4] = pid >> 8;
+            }
+            #endif
+
             memcpy(buffer, &PnP_ID[offset], buffer_size);
             att_value_len = buffer_size;
         }
@@ -852,7 +886,7 @@ void le_hogp_set_ReportMap(u8 *map, u16 size)
     hid_report_change = 1;
 }
 
-
+#endif
 
 
 

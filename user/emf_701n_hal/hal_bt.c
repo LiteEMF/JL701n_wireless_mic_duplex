@@ -45,6 +45,12 @@ static const ble_init_cfg_t ble_default_config = {
 };
 #endif
 
+
+//选择蓝牙从机模式
+extern void user_ble_pri_or_normal_sw(u8 status);
+extern u8 flag_user_private;
+
+
 //BLE + 2.4g 从机接收数据
 void ble_hid_transfer_channel_recieve(uint8_t* p_attrib_value,uint16_t length)
 {
@@ -57,6 +63,29 @@ void ble_hid_transfer_channel_recieve(uint8_t* p_attrib_value,uint16_t length)
 /*****************************************************************************************************
 **  hal bt Function
 ******************************************************************************************************/
+bool hal_bt_select_mode(uint8_t id, uint16_t trps)
+{
+    if(BT_ID0 != id) return false;
+    
+    logi("bt trps %x\n", trps);
+
+    if(trps & BT0_SUPPORT & BIT(TR_RF)){
+        logi("---------app select 24g--------\n");
+        if(!flag_user_private){
+            user_ble_pri_or_normal_sw(1);
+        }
+        
+    }else if(trps & BT0_SUPPORT & BIT(TR_BLE)) {
+        logi("---------app select ble--------\n");
+        if(flag_user_private){
+            user_ble_pri_or_normal_sw(0);
+        }
+    }else{
+        hal_bt_enable(BT_ID0, BT_BLE, 0);
+    }
+
+}
+
 bool hal_bt_get_mac(uint8_t id, bt_t bt, uint8_t *buf )
 {
     bool ret = false;
@@ -65,8 +94,6 @@ bool hal_bt_get_mac(uint8_t id, bt_t bt, uint8_t *buf )
 	
 	memcpy(buf,bt_get_mac_addr(),6);        //获取基础mac地址, EDR地址为基地址
 	
-    
-
     return ret;
 }
 

@@ -7,6 +7,10 @@
 #include "btcontroller_modules.h"
 #include "ui_manage.h"
 #include "adapter_process.h"
+#ifdef LITEEMF_ENABLED
+#include "api/bt/api_bt.h"
+#include "api/api_log.h"
+#endif
 
 #define  LOG_TAG_CONST       BT
 #define  LOG_TAG             "[ODEV_BLE]"
@@ -52,19 +56,45 @@ static void adapter_odev_ble_status_callback(void *priv, ble_state_e status)
 {
     adapter_server_ble_status = status;
     printf("update adapter_ble_status = %d", adapter_server_ble_status);
+
     switch (status) {
-    case BLE_ST_IDLE:
+    case BLE_ST_INIT_OK:
+        #ifdef LITEEMF_ENABLED
+        uint8_t id;
+        for(id=0; id<BT_MAX; id++){
+            if(BT0_SUPPORT & BIT(id)){      //全部模式
+                api_bt_event(BT_ID0, (bt_t)id, BT_EVT_INIT, NULL);
+            }
+        }
+        #endif
         break;
-    case BLE_ST_ADV:
+    case BLE_ST_IDLE:
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,BT_RFC,BT_EVT_IDLE,NULL);   
+        #endif
+        break;
+    case BLE_ST_SCAN:
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,BT_RFC,BT_EVT_SCAN,NULL);   
+        #endif
         break;
     case BLE_ST_CONNECT:
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,BT_RFC,BT_EVT_CONNECTED,NULL);   
+        #endif
         break;
     case BLE_ST_DISCONN:
     case BLE_ST_SEND_DISCONN:
         adapter_process_event_notify(ADAPTER_EVENT_ODEV_MEDIA_CLOSE, 0);
         adapter_process_event_notify(ADAPTER_EVENT_DISCONN, 0);
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,BT_RFC,BT_EVT_DISCONNECTED,NULL);   
+        #endif
         break;
-    case BLE_ST_NOTIFY_IDICATE:
+    case BLE_ST_SEARCH_COMPLETE:
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,BT_RFC,BT_EVT_READY,NULL);   
+        #endif
         break;
     case BLE_ST_CONNECTION_UPDATE_OK:
         printf("BLE_ST_CONNECTION_UPDATE_OK!!!!!!!");
@@ -164,6 +194,11 @@ int adapter_odev_ble_open(void *priv)
 #endif
     __this->u.server.opt->regist_state_cbk(0, adapter_odev_ble_status_callback);
     __this->u.server.opt->regist_wakeup_send(NULL, adapter_odev_ble_send_wakeup);
+#endif
+
+#ifdef LITEEMF_ENABLED
+__this->u.client.opt = ble_get_client_operation_table();
+__this->u.client.opt->regist_state_cbk(0, adapter_odev_ble_status_callback);
 #endif
 
 #if TCFG_TEST_BOX_ENABLE

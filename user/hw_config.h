@@ -76,7 +76,11 @@ extern "C" {
 
 
 		//bt 
-		#define BT0_SUPPORT					(BIT_ENUM(TR_BLE))
+		#if CONFIG_DUPLEX_ROLE_SEL
+		#define BT0_SUPPORT					(BIT_ENUM(TR_BLE) | BIT_ENUM(TR_RF))
+		#else
+		#define BT0_SUPPORT					(BIT_ENUM(TR_RFC))
+		#endif
 		// #define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_SWITCH))
 		#define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
 		#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_KB)
@@ -143,7 +147,7 @@ extern "C" {
 #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF) | BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
 	#define TCFG_USER_BLE_ENABLE                1
 #else
-	#define TCFG_USER_BLE_ENABLE                0
+	#define TCFG_USER_BLE_ENABLE                1
 #endif
 #if BT0_SUPPORT & (BIT_ENUM(TR_EDR) | BIT_ENUM(TR_EDRC))
 	#define TCFG_USER_EDR_ENABLE                1

@@ -9,6 +9,10 @@
 #include "adapter_process.h"
 #include "asm/pwm_led.h"
 #include "ui_manage.h"
+#ifdef LITEEMF_ENABLED
+#include "api/bt/api_bt.h"
+#include "api/api_log.h"
+#endif
 
 #define  LOG_TAG_CONST       BT
 #define  LOG_TAG             "[IDEV_BLE]"
@@ -60,20 +64,56 @@ static void adapter_ble_send_wakeup(void)
 
 static void adapter_ble_status_callback(void *priv, ble_state_e status)
 {
+    #ifdef LITEEMF_ENABLED
+    extern u8 flag_user_private;
+    bt_t bt = BT_BLE;
+    if(flag_user_private){
+        bt = BT_RF;
+    }
+    #endif
+
     switch (status) {
+    case BLE_ST_INIT_OK:
+        #ifdef LITEEMF_ENABLED
+        uint8_t id;
+        for(id=0; id<BT_MAX; id++){
+            if(BT0_SUPPORT & BIT(id)){      //全部模式
+                api_bt_event(BT_ID0, (bt_t)id, BT_EVT_INIT, NULL);
+            }
+        }
+        #endif
+        break;
     case BLE_ST_IDLE:
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,bt,BT_EVT_IDLE,NULL);   
+        #endif
         break;
     case BLE_ST_ADV:
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,bt,BT_EVT_ADV,NULL);   
+        #endif
         break;
     case BLE_ST_CONNECT:
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,bt,BT_EVT_CONNECTED,NULL);   
+        #endif
         break;
     case BLE_ST_DISCONN:
         adapter_process_event_notify(ADAPTER_EVENT_DISCONN, 0);
         adapter_process_event_notify(ADAPTER_EVENT_IDEV_MEDIA_CLOSE, 0);
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,bt,BT_EVT_DISCONNECTED,NULL);   
+        #endif
 		break;
     case BLE_ST_SEND_DISCONN:
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,bt,BT_EVT_DISCONNECTED,NULL);   
+        #endif
 		break;
     case BLE_ST_NOTIFY_IDICATE:
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,bt,BT_EVT_READY,NULL);   
+        #endif
         break;
     case BLE_ST_CONNECTION_UPDATE_OK:
         adapter_process_event_notify(ADAPTER_EVENT_CONNECT, 0);
