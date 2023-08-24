@@ -47,8 +47,9 @@
 //it can be modified before first programming,but keep the same as the original version
 #define CONFIG_PID                              JL701N              //烧写或强制升级之前可以修改,之后升级要保持一致
 //it can be modified before first programming,but keep the same as the original version
+#ifndef CONFIG_VID
 #define CONFIG_VID                              0.01				//烧写或强制升级之前可以修改,之后升级要保持一致
-
+#endif
 //Project with bluetooth,it must use OSC as PLL_SOURCE;
 #define CONFIG_PLL_SOURCE_USING_LRC             0       			//PLL时钟源选择 1:LRC 2:OSC
 
@@ -67,7 +68,9 @@
 //#define CONFIG_UBOOT_DEBUG_BAUD_RATE            1000000
 
 //config long-press reset io pin,time,trigger level
+#ifndef CONFIG_RESET_PIN
 #define CONFIG_RESET_PIN                        LDO  //io pin
+#endif
 #define CONFIG_RESET_TIME                       04   //unit:second
 #define CONFIG_RESET_LEVEL                      1	 //tigger level(0/1)
 

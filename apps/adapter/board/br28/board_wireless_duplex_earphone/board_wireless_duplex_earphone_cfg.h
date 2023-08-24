@@ -28,7 +28,9 @@
 #define WIRELESS_AUTO_MUTE					DISABLE
 
 //配对绑定
+#ifndef WIRELESS_PAIR_BONDING
 #define WIRELESS_PAIR_BONDING				DISABLE
+#endif
 
 #define	WIRELESS_TOOL_BLE_NAME_EN			ENABLE
 //rf测试，由工具触发样机进入dut模式
@@ -433,7 +435,7 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_ENC_JLA_ENABLE				    ENABLE
 #define WIRELESS_CODING_CHANNEL_NUM		1
 #define WIRELESS_DECODE_CHANNEL_NUM		2
-#define WIRELESS_CODING_BIT_RATE		(64000)
+#define WIRELESS_CODING_BIT_RATE		(64000)  //音频码率,音频压缩比码率越低音频压缩约高音质越差发送的空中数据就越少
 
 #define TCFG_DEV_MANAGER_ENABLE											0
 

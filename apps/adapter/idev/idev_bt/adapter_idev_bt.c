@@ -48,7 +48,10 @@ static int adapter_idev_bt_start(struct adapter_media *media)
     if (__this->parm->mode & BIT(IDEV_BLE)) {
         adapter_idev_ble_start(NULL);
     }
-
+    adapter_process_event_notify(ADAPTER_EVENT_IDEV_MEDIA_OPEN, 0);
+#if ALWAYS_RUN_STREAM
+    adapter_process_event_notify(ADAPTER_EVENT_ODEV_MEDIA_OPEN, 0);
+#endif
     return 0;
 }
 

@@ -21,6 +21,8 @@
 #if APP_GAMEAPD_ENABLE
 #include "app/gamepad/app_gamepad.h"
 #endif
+#include "adapter_process.h"
+
 #include "api/api_log.h"
 
 /******************************************************************************************************
@@ -35,6 +37,8 @@
 /******************************************************************************************************
 **	static Parameters
 *******************************************************************************************************/
+volatile bool m_memory_index = false;
+volatile uint8_t m_memory_len=0,m_memory_buf[2][64];		//cmd + data
 
 /*****************************************************************************************************
 **	static Function
@@ -43,7 +47,7 @@
 /*****************************************************************************************************
 **  Function
 ******************************************************************************************************/
-
+extern void adapter_music_vol(uint16_t music_vol, uint16_t mic_vol);
 
 const uint8_t led_channel[] = {0, 1, 2, 3, 4, 5, 10, 11, 12};
 bool rgb_driver_show(uint8_t* frame, uint8_t size)
@@ -170,6 +174,83 @@ void usbd_user_set_device_desc(uint8_t id, usb_desc_device_t *pdesc)
 #endif
 
 
+#if BT0_SUPPORT & (BIT_ENUM(TR_RF) | BIT_ENUM(TR_RFC))
+
+static uint8_t s_cmd_buf[32];
+static uint8_t s_cmd_len = 0;
+void api_bt_rx(uint8_t id,bt_t bt, bt_evt_rx_t* pa)
+{
+    // logd("weak bt%d rx:%d \n",bt,pa->len);    //dumpd(pa->buf,pa->len);
+
+	#if BT0_SUPPORT & BIT_ENUM(TR_RF)
+    uint8_t mtu = RF_CMD_MTU;
+    #endif
+    #if BT0_SUPPORT & BIT_ENUM(TR_RFC)
+    uint8_t mtu = RFC_CMD_MTU;
+    #endif
+
+	
+	api_bt_ctb_t* bt_ctbp;
+
+	bt_ctbp = api_bt_get_ctb(bt);
+	if(NULL == bt_ctbp) return;
+	logd("r%d",pa->len);
+// return;
+	if(BT_UART == pa->bts){					//uart
+		uint8_t i;
+		command_rx_t rx;
+		for(i=0; i<pa->len; i++){
+			if(api_command_rx_byte(&rx, mtu, pa->buf[i], s_cmd_buf, &s_cmd_len)){
+				logd("decode %d:",rx.len); dumpd(rx.pcmd, rx.len);
+				switch(rx.pcmd[3]){
+					case CMD_MUSIC_VOL:{
+						#if BT0_SUPPORT & BIT_ENUM(TR_RF)
+						uint16_t music_vol = (rx.pcmd[4] << 8) | rx.pcmd[5];
+						uint16_t mic_vol = rx.pcmd[6] & 0xffff;
+						adapter_music_vol(music_vol, mic_vol);
+						#endif
+						break;
+					}
+					default:
+						break;
+				}
+				command_rx_free(&rx);
+			}
+		}
+	}
+}
+#endif
+
+/*******************************************************************
+** Parameters:		
+** Returns:		true: 用户自定义处理, false: 会走通用处理	
+** Description: 蓝牙事件用户处理
+*******************************************************************/
+bool api_bt_event_weak(uint8_t id,bt_t bt, bt_evt_t const event, bt_evt_pa_t* pa)
+{
+	api_bt_ctb_t* bt_ctbp;
+
+	if(id >= BT_ID_MAX) return false;
+	bt_ctbp = api_bt_get_ctb(bt);
+	if(NULL == bt_ctbp) return false;
+
+	switch(event){
+	case BT_EVT_TX:
+		if((NULL != bt_ctbp->fifo_txp) && (NULL != pa)){
+			if(0 == pa->tx.ret){
+				uint16_t fifo_len = fifo_length(&bt_ctbp->fifo_txp->fifo);
+				if(m_memory_len && (0 == fifo_len)){
+					// m_memory_len = 0;
+					rf_command_send(m_memory_buf[m_memory_index][0], &m_memory_buf[m_memory_index][1], m_memory_len-1);
+				}
+			}
+		}
+		break;
+	}
+	return false;
+}
+
+
 void app_key_vendor_scan(uint32_t *pkey)
 {
 	
@@ -177,7 +258,16 @@ void app_key_vendor_scan(uint32_t *pkey)
 
 void app_key_event(void)
 {
-    
+	static bool debond = false;
+	if(m_app_key.press_long & HW_KEY_HOME){
+		if(!debond){
+			debond = true;
+			api_bt_debond(BT_ID0,BT_RF);
+			api_bt_debond(BT_ID0,BT_RFC);
+		}
+	}else{
+		debond = false;
+	}
 }
 
 
@@ -228,8 +318,6 @@ void user_vender_handler(void)
 	static uint8_t s_cmd_buf[UART_CMD_MTU];
 	static uint8_t s_cmd_len = 0;
     
-	memset(&rx, 0, sizeof(rx));
-
     while(ERROR_SUCCESS == app_fifo_get(fifop, &c)){
         // logd("%x",c);
 		// if(api_command_rx_byte(&rx, UART_CMD_MTU, c, s_cmd_buf, &s_cmd_len)){
@@ -249,10 +337,11 @@ void user_vender_handler(void)
 
 
     //use test
-	#if (API_USBD_BIT_ENABLE && (USBD_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER)))) \ 
-	|| (BT_ENABLE && (BLE_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER))))
-    
 	if(m_systick - timer >= 3000){
+		timer = m_systick;
+
+		#if (API_USBD_BIT_ENABLE && (USBD_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER)))) \ 
+			|| (BT_ENABLE && (BLE_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER))))
 		bool ready = false;
 		#define  TEST_USB_ID	0
 
@@ -268,7 +357,6 @@ void user_vender_handler(void)
 		ready |= BOOL_SET(bt_ctbp->sta == BT_STA_READY); 
 		#endif
 		
-		timer = m_systick;
 		if(ready){
             static kb_t kb={KB_REPORT_ID,0};
             static mouse_t mouse={MOUSE_REPORT_ID,0};
@@ -307,10 +395,34 @@ void user_vender_handler(void)
 			api_transport_tx(&ble_handle,&mouse,sizeof(mouse));
 			#endif
         }
+		#endif
+
+
+		#if BT0_SUPPORT & (BIT_ENUM(TR_RF) | BIT_ENUM(TR_RFC))
+		api_bt_ctb_t* rf_ctbp;
+		#if BT0_SUPPORT & BIT_ENUM(TR_RF)
+		rf_ctbp = api_bt_get_ctb(BT_RF);
+		#endif
+		#if BT0_SUPPORT & BIT_ENUM(TR_RFC)
+		rf_ctbp = api_bt_get_ctb(BT_RFC);
+		#endif
+
+		if(rf_ctbp->sta == BT_STA_READY){
+			static uint32_t buf = 0;
+			buf++;
+
+			m_memory_buf[!m_memory_index][0] = CMD_HEART_BEAT;
+			memcpy(&m_memory_buf[!m_memory_index][1], &buf, sizeof(buf));
+			m_memory_len = sizeof(buf)+1;
+			m_memory_index = !m_memory_index;
+		}
+
+		#endif
+
     }
-	#endif
+	
 
-
+	
 
 }
 

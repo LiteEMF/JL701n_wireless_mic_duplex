@@ -20,7 +20,7 @@
 
 #define WIRELESS_ENC_OUT_SIZE			128//256
 #define WIRELESS_FRAME_SUM          	(1)/*一包多少帧*/
-#define WIRELESS_FRAME_COMMAND_MAX     	(16)/*附带命令最大长度*/
+#define WIRELESS_FRAME_COMMAND_MAX     	(33)/*附带命令最大长度*/
 //#define WIRELESS_PACKET_HEADER_LEN  	(2 + 1)/*包头Max Length*/
 #define WIRELESS_PACKET_REPEAT_SUM  	(1)/*包重发次数*/
 #define WIRELESS_ENC_OUT_BUF_SIZE		(WIRELESS_ENC_OUT_SIZE * WIRELESS_FRAME_SUM)
@@ -31,7 +31,7 @@
 #else
 #define TRANSFERING_TIMER_ENABLE        0
 #endif
-#define TRANSFERING_TIMER_UNIT          (100)
+#define TRANSFERING_TIMER_UNIT          (20)				//liteemf fix speed
 
 
 
@@ -83,6 +83,15 @@ void transfering_timer_check(void *p)
 }
 #endif
 
+/*******************************************************************
+** Description: 2.4g发送函数
+** 发送数据构成 
+    包头 +  协议扩展(目前是0)        +   用于自定义私有数据             +   音频数据
+    2   +   hdl->expand_data.ex_len + g_wireless_enc_parm.command_len + frame_len
+** 发送协议:    
+    耳机端5ms发送一次,由mic中断触发
+    dongle端大约5ms发送一次(不完全准确),由于USB 中断触发(接收到足够的音频数据后就会压缩发送)
+*******************************************************************/
 static int adapter_wireless_enc_push(struct __adapter_wireless_enc *hdl, void *buf, int len)
 {
     if (!hdl->start) {
@@ -99,7 +108,7 @@ static int adapter_wireless_enc_push(struct __adapter_wireless_enc *hdl, void *b
         ret = wireless_mic_odev_ble_send(NULL, buf, len);
 #endif
         if (ret) {
-            putchar('E');
+            // putchar('E');
         } else {
             //putchar('O');
         }
@@ -220,7 +229,8 @@ static int adapter_wireless_enc_output_handler(struct audio_encoder *encoder, u8
         sys_timer_modify(enc->transfering_timer, TRANSFERING_TIMER_UNIT);
     }
 #endif
-
+	// printf("uac:%d\n",len);		//liteemf add ,见adapter_wireless_enc_push函数说明,检查修改码率后音频数据长度
+	
     //检查上次是否还有数据没有发出
     if (enc->frame_cnt >= WIRELESS_FRAME_SUM) {
         int wlen = adapter_wireless_enc_push(enc, enc->out_buf, enc->frame_len);
@@ -292,6 +302,7 @@ void adapter_wireless_enc_close(void)
 #if 1
 int adapter_wireless_enc_open_base(struct audio_fmt *fmt, u16 frame_in_size)
 {
+
     if (fmt == NULL) {
         log_e("wireless_enc_open parm error\n");
         return -1;

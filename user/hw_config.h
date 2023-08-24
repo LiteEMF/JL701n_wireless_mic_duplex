@@ -51,9 +51,9 @@ extern "C" {
 #elif PROJECT_GAMEPAD
 	#define GAMEPAD1					1
 	
-
 	#if GAMEPAD1	
 		#define CONFIG_DUPLEX_ROLE_SEL		1 //APP_WIRELESS_MASTER, APP_WIRELESS_SLAVE
+		#define	CPU							1
 
 		#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15 
 
@@ -85,6 +85,12 @@ extern "C" {
 		#define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
 		#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_KB)
 
+		#define RF_CMD_MTU                  37
+		#define RFC_CMD_MTU                 37
+		#define RF_TX_LL_MTU				32
+		#define RFC_TX_LL_MTU				20
+
+
 		#define DEV_TRPS_DEFAULT				BT0_SUPPORT
 		#define SW_VERSION                     	0x01
         #define DEFAULT_NAME			       	"gamepad"
@@ -100,6 +106,7 @@ extern "C" {
 //sdk config
 // #define TCFG_UART0_TX_PORT  				IO_PORTA_00		在hw_board中设置
 // #define TCFG_DCDC_PORT_SEL				NO_CONFIG_PORT  在hw_board中设置
+#define WIRELESS_PAIR_BONDING				1
 #ifndef TCFG_CHARGE_ENABLE
 #define TCFG_CHARGE_ENABLE					DISABLE_THIS_MOUDLE
 #endif

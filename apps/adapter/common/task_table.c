@@ -82,7 +82,9 @@ const struct task_info task_info_table[] = {
     {"uac_play",            6,  0,   768,   0    },
     {"uac_record",          6,  0,   768,   32   },
 #endif
+#ifdef LITEEMF_ENABLED
     {"demo_task1",          2,  1,   768,   32   },
+#endif
     {0, 0},
 };
 

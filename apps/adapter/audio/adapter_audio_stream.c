@@ -91,11 +91,11 @@ static struct audio_stream_entry *adapter_audio_stream_attr_open(struct adapter_
         ASSERT(media_parm, "ADAPTER_STREAM_ATTR_DVOL parm err!!\n");
         memcpy(&vol_parm, fmt->value.digital_vol.volume, sizeof(audio_dig_vol_param));
         audio->dvol = audio_dig_vol_open((audio_dig_vol_param *)&vol_parm);
-#if !WIRELESS_DOWNSTREAM_ENABLE
+// #if !WIRELESS_DOWNSTREAM_ENABLE
         media_parm->vol_limit = 100;
         media_parm->start_vol_l = 100;
         media_parm->start_vol_r = 100;
-#endif
+// #endif
         if (audio->dvol) {
             audio->vol_limit = media_parm->vol_limit;
             //设置初始音量

@@ -561,6 +561,8 @@ extern u8 delete_last_device_from_vm();
 #define BD_CLASS_KEYBOARD           0x002540
 #define BD_CLASS_KEYBOARD_MOUSE     0x0025C0
 #define BD_CLASS_REMOTE_CONTROL     0x00254C
+#define BD_CLASS_GAMEPAD            0x002508
+
 
 #define BD_CLASS_TRANSFER_HEALTH    0x10091C
 

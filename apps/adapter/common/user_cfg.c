@@ -130,6 +130,11 @@ const char *bt_get_local_name()
 {
     return (const char *)(bt_cfg.edr_name);
 }
+void bt_set_local_name(char *name, u8 len)
+{
+    memcpy(bt_cfg.edr_name, name, len);
+    bt_cfg.edr_name[len] = 0;
+}
 
 const char *bt_get_pin_code()
 {

@@ -1128,8 +1128,17 @@ void bt_ble_init(void)
 #endif
 
     set_ble_work_state(BLE_ST_INIT_OK);
+#if !WIRELESS_PAIR_BONDING
     ble_module_enable(1);
-
+#else
+    printf("pair_flag == %d", conn_pair_info.pair_flag);
+    if(conn_pair_info.pair_flag){
+        put_buf(conn_pair_info.peer_address_info, 7);
+        ble_module_enable(1);
+    }else{
+        ble_module_enable(0);
+    }
+#endif
 }
 
 void bt_ble_exit(void)
@@ -1167,8 +1176,7 @@ void ble_server_send_test_key_num(u8 key_num)
 
 
 //hogp fix
-
-bool hogp_is_bonded(void)
+bool bt_ble_is_bonded(void)
 {
     return conn_pair_info.pair_flag;
 }

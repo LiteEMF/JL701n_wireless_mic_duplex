@@ -57,6 +57,9 @@ static int adapter_idev_mic_start(struct adapter_media *media)
 {
     //idev设备启动，这里mic输入比较简单， 这里直接告知主流程请求启动音频媒体
     adapter_process_event_notify(ADAPTER_EVENT_IDEV_MEDIA_OPEN, 0);
+#if ALWAYS_RUN_STREAM
+    adapter_process_event_notify(ADAPTER_EVENT_ODEV_MEDIA_OPEN, 0);
+#endif
 
     return 0;
 }

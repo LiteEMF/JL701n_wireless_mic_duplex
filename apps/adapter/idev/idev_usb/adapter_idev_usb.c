@@ -3,7 +3,7 @@
 #include "adapter_process.h"
 #include "usb/usb_config.h"
 #include "usb/device/usb_stack.h"
-
+#include "audio_config.h"
 #if TCFG_USB_SLAVE_HID_ENABLE
 #include "usb/device/hid.h"
 #endif
@@ -214,6 +214,8 @@ static int adapter_idev_uac_event_prase(struct sys_event *e)
                 downstream_parm->start_vol_l = vol_l;
                 downstream_parm->start_vol_r = vol_r;
             }
+            extern void app_audio_set_music(u8 vol);
+            app_audio_set_music(vol_l);
         }
         break;
     default:

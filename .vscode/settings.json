@@ -24,6 +24,20 @@
 		"bt_driver.h": "c",
 		"api_transport.h": "c",
 		"emf_typedef.h": "c",
-		"3th_profile_api.h": "c"
+		"3th_profile_api.h": "c",
+		"bt_common.h": "c",
+		"pinmap.h": "c",
+		"api_commander.h": "c",
+		"api_log.h": "c",
+		"app_command.h": "c",
+		"emf.h": "c",
+		"usbh.h": "c",
+		"adapter_process.h": "c",
+		"typedef.h": "c",
+		"os_type.h": "c",
+		"os_error.h": "c",
+		"emf_config.h": "c",
+		"hw_board.h": "c",
+		"api_tick.h": "c"
 	}
 }

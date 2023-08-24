@@ -509,6 +509,16 @@ void app_audio_set_volume(u8 state, s8 volume, u8 fade)
     app_audio_volume_change();
 }
 
+void app_audio_set_music(u8 vol)
+{
+    uint8_t music_vol;
+    music_vol = vol * get_max_sys_vol() / 100;
+    if(music_vol > get_max_sys_vol()){
+       music_vol = get_max_sys_vol();
+    }
+    app_audio_set_volume(APP_AUDIO_STATE_MUSIC, music_vol, 1);
+}
+
 void app_audio_volume_init(void)
 {
     app_audio_set_volume(APP_AUDIO_STATE_MUSIC, app_var.music_volume, 1);

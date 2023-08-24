@@ -27,10 +27,12 @@ extern "C" {
 
 #elif PROJECT_GAMEPAD
 	#if GAMEPAD1
+
+		#define KEY_HOME_GPIO		PB_01	
 		// timer
 		#define API_TIMER_BIT_ENABLE 	BIT(2)
 		#define HW_TIMER_MAP {\
-			{2, VAL2FLD(TIMER_FREQ,1000)|VAL2FLD(TIMER_PRI,1)},	}
+			{2, VAL2FLD(TIMER_FREQ,1000)|VAL2FLD(TIMER_PRI,1)|VAL2FLD(TIMER_CPU,CPU)},	}
 			
 		// uart
 		#define TCFG_UART0_TX_PORT  				IO_PORTC_05

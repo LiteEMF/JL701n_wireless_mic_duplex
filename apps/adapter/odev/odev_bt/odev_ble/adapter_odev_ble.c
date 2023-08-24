@@ -85,7 +85,9 @@ static void adapter_odev_ble_status_callback(void *priv, ble_state_e status)
         break;
     case BLE_ST_DISCONN:
     case BLE_ST_SEND_DISCONN:
+#if !ALWAYS_RUN_STREAM
         adapter_process_event_notify(ADAPTER_EVENT_ODEV_MEDIA_CLOSE, 0);
+#endif
         adapter_process_event_notify(ADAPTER_EVENT_DISCONN, 0);
         #ifdef LITEEMF_ENABLED
         api_bt_event(BT_ID0,BT_RFC,BT_EVT_DISCONNECTED,NULL);   
@@ -98,7 +100,9 @@ static void adapter_odev_ble_status_callback(void *priv, ble_state_e status)
         break;
     case BLE_ST_CONNECTION_UPDATE_OK:
         printf("BLE_ST_CONNECTION_UPDATE_OK!!!!!!!");
+#if !ALWAYS_RUN_STREAM
         adapter_process_event_notify(ADAPTER_EVENT_ODEV_MEDIA_OPEN, 0);
+#endif
         adapter_process_event_notify(ADAPTER_EVENT_CONNECT, 0);
         break;
     default:
@@ -196,7 +200,7 @@ int adapter_odev_ble_open(void *priv)
     __this->u.server.opt->regist_wakeup_send(NULL, adapter_odev_ble_send_wakeup);
 #endif
 
-#ifdef LITEEMF_ENABLED
+#if BLE_WIRELESS_CLIENT_EN
 __this->u.client.opt = ble_get_client_operation_table();
 __this->u.client.opt->regist_state_cbk(0, adapter_odev_ble_status_callback);
 #endif

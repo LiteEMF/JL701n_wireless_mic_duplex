@@ -1,6 +1,8 @@
 #include "adapter_media.h"
 #include "adapter_process.h"
 
+
+u8 adapter_media_sel = 0;           //add for media select,如果有多个media配置通过这个选择
 void adapter_media_init(void)
 {
     adapter_encoder_init();
@@ -35,7 +37,9 @@ void adapter_media_stop(struct adapter_media *media)
         adapter_decoder_close(media->updecode);
         adapter_decoder_close(media->downdecode);
         g_printf("%s, %d\n", __FUNCTION__, __LINE__);
+        // #ifndef LITEEMF_ENABLED              //fix 固定主频
         clk_set("sys", 48000000);
+        // #endif
     }
 }
 
@@ -45,17 +49,22 @@ int adapter_media_start(struct adapter_media *media)
     if (media == NULL) {
         return -1;
     }
+
+    media->media_sel = adapter_media_sel;
+
     if (media->media_sel >= media->config->list_num) {
         //printf("%s, %d\n", __FUNCTION__, __LINE__);
         return -1;
     }
-#if (WIRELESS_CLK == 144)
-    clk_set("sys", 144000000);
-#elif (WIRELESS_CLK == 160)
-    clk_set("sys", 160000000);
-#else
-    clk_set("sys", 120000000);
-#endif
+// #ifndef LITEEMF_ENABLED						//fix 固定主频
+    #if (WIRELESS_CLK == 144)              
+        clk_set("sys", 144000000);
+    #elif (WIRELESS_CLK == 160)
+        clk_set("sys", 160000000);
+    #else
+        clk_set("sys", 120000000);
+    #endif
+// #endif
     struct adapter_media_fmt *fmt = media->config->list + media->media_sel;
     g_f_printf("media->media_sel = %d\n", media->media_sel);
     //upstream

@@ -21,9 +21,13 @@
 #if (APP_MAIN ==  APP_WIRELESS_DUPLEX && WIRELESS_ROLE_SEL == APP_WIRELESS_MASTER)
 
 #define POWER_OFF_CNT 	     			6
-#define MASTER_ENC_COMMAND_LEN			3
-#define SLAVE_ENC_COMMAND_LEN			1
-
+#ifdef LITEEMF_ENABLED        
+#define MASTER_ENC_COMMAND_LEN			RFC_TX_LL_MTU
+#define SLAVE_ENC_COMMAND_LEN			RF_TX_LL_MTU
+#else
+#define MASTER_ENC_COMMAND_LEN			8
+#define SLAVE_ENC_COMMAND_LEN			8
+#endif
 
 u8 wireless_conn_status = 0;
 static u16 cur_music_vol = 0;
@@ -150,8 +154,24 @@ static const struct adapter_stream_fmt master_audio_upstream_list[] = {
 #endif
 };
 
+uint8_t sdk_rf_tx_len;
+uint8_t sdk_rf_tx_buf[RFC_TX_LL_MTU];
 static void master_downstream_enc_command_callback(u8 *buf, u8 len)
 {
+    memset(buf,0,len);
+
+    #ifdef LITEEMF_ENABLED
+    api_bt_ctb_t* bt_ctbp = api_bt_get_ctb(BT_RFC);
+	if(NULL == bt_ctbp) return;
+
+    bt_evt_tx_t tx = {BT_UART,0};
+    api_bt_event(BT_ID0, BT_RFC, BT_EVT_TX, &tx);
+    if(sdk_rf_tx_len){
+        memcpy(buf, sdk_rf_tx_buf,sdk_rf_tx_len); //拷贝当前发送
+        sdk_rf_tx_len = 0;
+        //printf("tx%d,%x %x %x %x",sdk_rf_tx_len,buf[0],buf[1],buf[2],buf[3]);
+    }
+    #else
     u16 vol_l, vol_r, vol_mic;
 #if (WIRELESS_EARPHONE_MIC_EN)
     vol_l = 100;
@@ -165,6 +185,7 @@ static void master_downstream_enc_command_callback(u8 *buf, u8 len)
     buf[0] = (u8)vol_l;
     buf[1] = (u8)vol_r;
     buf[2] = (u8)vol_mic;
+	#endif
 
 }
 struct adapter_encoder_fmt master_enc_downstream_parm = {
@@ -187,6 +208,10 @@ static const struct adapter_stream_fmt master_audio_downstream_list[] = {
 };
 static int master_audio_command_parse(void *priv, u8 *data)
 {
+    #ifdef LITEEMF_ENABLED
+    bt_evt_rx_t rx = {BT_UART,data,SLAVE_ENC_COMMAND_LEN};
+    api_bt_event(BT_ID0, BT_RFC, BT_EVT_RX, &rx);
+    #else
     /*!< 这里回调是音频传输过程附带过来的命令数据 */
     u8 command = data[0];
     if (command) {
@@ -202,6 +227,7 @@ static int master_audio_command_parse(void *priv, u8 *data)
             app_task_put_key_msg(KEY_VOL_DOWN, (int)command);
         }
     }
+    #endif
     return SLAVE_ENC_COMMAND_LEN;
 }
 static const struct adapter_decoder_fmt master_audio_upstream = {
@@ -343,6 +369,11 @@ static int dongle_event_handle_callback(struct sys_event *event)
             case ADAPTER_EVENT_DISCONN :
                 printf("ADAPTER_EVENT_DISCONN");
                 wireless_conn_status = 0;
+            case ADAPTER_EVENT_ODEV_MEDIA_OPEN :	//dongele 必须打开音频uac_speaker_stream用于通讯
+            case ADAPTER_EVENT_IDEV_MEDIA_OPEN :
+                #ifdef LITEEMF_ENABLED
+                // uac_open_spk(SPK_AUDIO_RATE);    //TODO
+                #endif
                 break;
             case ADAPTER_EVENT_IDEV_MEDIA_CLOSE :
             case ADAPTER_EVENT_ODEV_MEDIA_CLOSE :
@@ -362,6 +393,10 @@ static int dongle_event_handle_callback(struct sys_event *event)
 
 void app_main_run(void)
 {
+		#ifdef LITEEMF_ENABLED
+        extern void liteemf_app_start(void);
+        liteemf_app_start();
+        #endif
     ui_update_status(STATUS_POWERON);
 
     while (1) {
@@ -382,11 +417,6 @@ void app_main_run(void)
         struct adapter_pro *pro = adapter_process_open(idev, odev, media, dongle_event_handle_callback);//event_handle_callback 用户想拦截处理的事件
 
         ASSERT(pro, "adapter_process_open fail!!\n");
-
-        #ifdef LITEEMF_ENABLED
-        extern void liteemf_app_start(void);
-        liteemf_app_start();
-        #endif
 
         //执行(包括事件解析、事件执行、媒体启动/停止, HID等事件转发)
         adapter_process_run(pro);

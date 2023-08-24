@@ -26,12 +26,17 @@
 #if (APP_MAIN == APP_WIRELESS_DUPLEX && WIRELESS_ROLE_SEL == APP_WIRELESS_SLAVE)
 
 #define POWER_OFF_CNT 	     			6
-#define MASTER_ENC_COMMAND_LEN			3
-#define SLAVE_ENC_COMMAND_LEN			1
+#ifdef LITEEMF_ENABLED        
+#define MASTER_ENC_COMMAND_LEN			RFC_TX_LL_MTU
+#define SLAVE_ENC_COMMAND_LEN			RF_TX_LL_MTU
+#else
+#define MASTER_ENC_COMMAND_LEN			8
+#define SLAVE_ENC_COMMAND_LEN			8
+#endif
 #define MAX_VOL				            15
 
-static s32 cur_music_vol = -1;
-static s32 cur_mic_vol = -1;
+s32 cur_music_vol = -1;
+s32 cur_mic_vol = -1;
 static u32 cur_time = 0;
 static u8 flag_mute_dac = 0;
 u8 wireless_conn_status = 0;
@@ -186,11 +191,39 @@ const NoiseGateParam slave_noisegate_parm = {
 #endif
 #endif//WIRELESS_NOISEGATE_EN
 
+uint8_t sdk_rf_tx_len;
+uint8_t sdk_rf_tx_buf[RF_TX_LL_MTU];
+
+static void slave_upstream_enc_command_callback(u8 *buf, u8 len)
+{
+    memset(buf,0,len);
+    #ifdef LITEEMF_ENABLED
+    api_bt_ctb_t* bt_ctbp = api_bt_get_ctb(BT_RF);
+	if(NULL == bt_ctbp) return;
+
+    bt_evt_tx_t tx = {BT_UART,0};
+    api_bt_event(BT_ID0, BT_RF, BT_EVT_TX, &tx);
+    if(sdk_rf_tx_len){
+        memcpy(buf, sdk_rf_tx_buf,sdk_rf_tx_len); //拷贝当前发送
+        sdk_rf_tx_len = 0;
+        //printf("tx%d,%x %x %x %x",sdk_rf_tx_len,buf[0],buf[1],buf[2],buf[3]);
+    }
+    #endif
+}
 static struct adapter_encoder_fmt slave_enc_upstream_parm = {
     .enc_type = ADAPTER_ENC_TYPE_WIRELESS,
     .channel_type = NULL,//区分左右声道,这里传的是指针，目的可以动态获取
     .command_len = SLAVE_ENC_COMMAND_LEN,
+    #ifdef LITEEMF_ENABLED
+    .command_callback = slave_upstream_enc_command_callback,
+    #endif
 };
+static struct adapter_encoder_fmt dongle_enc_upstream_parm = {
+    .enc_type = ADAPTER_ENC_TYPE_UAC_MIC,
+    .channel_type = NULL,//区分左右声道,这里传的是指针，目的可以动态获取
+    .command_len = SLAVE_ENC_COMMAND_LEN,
+};
+
 static const u16 slave_dvol_table[] = {
     0	, //0
     93	, //1
@@ -423,6 +456,51 @@ static const struct adapter_stream_fmt slave_audio_upstream_list[] = {
     },
 };
 
+static const struct adapter_stream_fmt dongle_audio_upstream_list[] = {
+
+//数字音量节点
+    {
+        .attr  = ADAPTER_STREAM_ATTR_DVOL,
+        .value = {
+            .digital_vol = {
+                .data_handle = NULL,//如果要关注处理前的数据可以在这里注册回调
+                .volume = &slave_digital_vol_parm,
+            },
+        },
+    },
+
+#if (WIRELESS_LLNS_ENABLE)
+    {
+        .attr  = ADAPTER_STREAM_ATTR_LLNS,
+        .value = {
+            .llns = {
+                .samplerate  = WIRELESS_CODING_SAMPLERATE,
+                .onoff = 0,
+                .llns_parm = {
+                    .gainfloor = 0.1f,
+                    .suppress_level = 1.0f,
+                    .frame_len = WIRELESS_CODING_FRAME_LEN,
+                },
+                .data_handle = NULL,//如果要关注处理前的数据可以在这里注册回调
+                //其他关于encoder的参数配置
+            },
+        },
+    },
+#endif
+    {
+
+        .attr  = ADAPTER_STREAM_ATTR_ENCODE,
+        .value = {
+            .encoder = {
+                .data_handle = NULL,//如果要关注处理前的数据可以在这里注册回调
+                .parm = &dongle_enc_upstream_parm,
+
+                //其他关于encoder的参数配置
+            },
+        },
+    },
+};
+
 static u16 slave_audio_downstream_get_in_sr(void *priv)
 {
     return WIRELESS_DECODE_SAMPLERATE;
@@ -599,6 +677,52 @@ static const struct adapter_stream_fmt slave_audio_downstream_list[] = {
     },
 };
 
+static const struct adapter_stream_fmt dongle_audio_downstream_list[] = {
+//数字音量节点
+
+    {
+        .attr  = ADAPTER_STREAM_ATTR_DVOL,
+        .value = {
+            .digital_vol = {
+                .data_handle = NULL,//如果要关注处理前的数据可以在这里注册回调
+                .volume = &downstream_digital_vol_parm,
+            },
+        },
+    },
+    //dac 节点
+    {
+        .attr  = ADAPTER_STREAM_ATTR_DAC,
+        .value = {
+#if NEW_AUDIO_W_MIC
+            .dac1 = {
+                .data_handle = dac_data_pro_handler,//如果要关注处理前的数据可以在这里注册回调
+                .attr = {
+                    .write_mode = WRITE_MODE_BLOCK,
+                    .sample_rate = WIRELESS_DECODE_SAMPLERATE,
+                    .delay_ms = 12,
+                    .protect_time = 0,
+                    .start_delay = 6,
+                    .underrun_time = 1,
+                },
+            }
+#else
+            .dac = {
+                .data_handle = dac_data_pro_handler,//如果要关注处理前的数据可以在这里注册回调
+                //其他关于dac的参数配置
+                .get_delay_time = NULL,
+                .attr = {
+                    .write_mode = WRITE_MODE_BLOCK,
+                    .delay_time = 12,//10,//dac延时设置
+                    .protect_time = 0,
+                    .start_delay = 6,
+                    .underrun_time = 1,
+                },
+            },
+#endif
+        },
+    },
+};
+
 static int adapter_uac_vol_switch(int vol)
 {
     u16 valsum = vol * (MAX_VOL + 1) / 100;
@@ -610,7 +734,13 @@ static int adapter_uac_vol_switch(int vol)
 }
 
 static int slave_downstream_command_parse(void *priv, u8 *data)
-{
+{	bt_server_t bts;
+	uint8_t* buf;
+	uint16_t len;
+    #ifdef LITEEMF_ENABLED
+    bt_evt_rx_t rx = {BT_UART,data,MASTER_ENC_COMMAND_LEN};
+    api_bt_event(BT_ID0, BT_RF, BT_EVT_RX, &rx);
+    #else
     static u16 music_vol = 0;
     static u16 mic_vol = 0;
 
@@ -629,6 +759,7 @@ static int slave_downstream_command_parse(void *priv, u8 *data)
             adapter_process_event_notify(ADAPTER_EVENT_SET_MIC_VOL, mic_vol);
         }
     }
+    #endif
 
     return MASTER_ENC_COMMAND_LEN;
 }
@@ -648,8 +779,26 @@ static const struct adapter_decoder_fmt slave_audio_downstream = {
     .dec_output_type = AUDIO_CH_DIFF,
 #endif
     .cmd_parse_cbk = slave_downstream_command_parse,
+};
+
+static const struct adapter_decoder_fmt dongle_audio_upstream = {
+    .dec_type = ADAPTER_DEC_TYPE_MIC,
+    .list	  = dongle_audio_upstream_list,
+    .list_num = sizeof(dongle_audio_upstream_list) / sizeof(dongle_audio_upstream_list[0]),
+};
+static const struct adapter_decoder_fmt dongle_audio_downstream = {
+    .dec_type = ADAPTER_DEC_TYPE_UAC_SPK,
+    .list	  = dongle_audio_downstream_list,
+    .list_num = sizeof(dongle_audio_downstream_list) / sizeof(dongle_audio_downstream_list[0]),
+#if TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_LR
+    .dec_output_type = AUDIO_CH_LR,
+#else
+    .dec_output_type = AUDIO_CH_DIFF,
+#endif
+    .cmd_parse_cbk = slave_downstream_command_parse,
 
 };
+
 static const struct adapter_media_fmt slave_media_list[] = {
     [0] = {
 #if WIRELESS_UPSTREAM_ENABLE
@@ -662,6 +811,10 @@ static const struct adapter_media_fmt slave_media_list[] = {
 #else
         .downstream = NULL,
 #endif
+    },
+    [1] = {
+        .upstream =	&dongle_audio_upstream,
+        .downstream = &dongle_audio_downstream,
     },
 };
 

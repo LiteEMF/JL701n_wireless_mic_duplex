@@ -380,6 +380,10 @@ void clear_bonding_info(void)
 #endif
     }
 }
+bool bt_ble_is_bonded(void)
+{
+    return conn_pair_info.pair_flag;
+}
 
 //------------------------------------------------------------
 static void set_ble_work_state(ble_state_e state)
@@ -1519,8 +1523,16 @@ void bt_ble_init(void)
 
 #if !WIRELESS_PAIR_BONDING
     device_bonding_init();
-#endif
     ble_module_enable(1);
+#else
+    printf("pair_flag == %d", conn_pair_info.pair_flag);
+    if(conn_pair_info.pair_flag){
+        put_buf(conn_pair_info.peer_address_info, 7);
+        ble_module_enable(1);
+    }else{
+        ble_module_enable(0);
+    }
+#endif
     extern void wifi_detect_set_master_first(u8 first);
 #if TCFG_WIFI_DETECT_ENABLE
     wifi_detect_set_master_first(TCFG_WIFI_DETCET_PRIOR);

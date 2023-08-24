@@ -25,7 +25,9 @@
 #define WIRELESS_CODING_FRAME_LEN		50
 
 //配对绑定
+#ifndef WIRELESS_PAIR_BONDING
 #define WIRELESS_PAIR_BONDING				DISABLE
+#endif
 
 #define	WIRELESS_TOOL_BLE_NAME_EN			ENABLE
 //rf测试，由工具触发样机进入dut模式
@@ -444,7 +446,8 @@ DAC硬件上的连接方式,可选的配置：
 #endif
 
 #define WIRELESS_DECODE_CHANNEL_NUM		1
-#define WIRELESS_CODING_BIT_RATE		(128000)
+// 64~128K
+#define WIRELESS_CODING_BIT_RATE		(116000)    //默认128k音频码率,音频压缩比码率越低音频压缩约高音质越差发送的空中数据就越少
 
 #define TCFG_DEV_MANAGER_ENABLE											0
 

@@ -23,7 +23,8 @@
 #include "le_common.h"
 #include "rcsp_bluetooth.h"
 #include "app_comm_bt.h"
-
+#include "adapter_media.h"
+#include "adapter_process.h"
 /*******************************************************************************************************************
 **	Hardware  Defined
 ********************************************************************************************************************/
@@ -32,11 +33,17 @@
 /*******************************************************************************************************************
 **	public Parameters
 ********************************************************************************************************************/
+extern uint8_t sdk_rf_tx_len;
+#if BT0_SUPPORT & BIT_ENUM(TR_RF)
+extern uint8_t sdk_rf_tx_buf[RF_TX_LL_MTU];
+#elif BT0_SUPPORT & BIT_ENUM(TR_RFC)
+extern uint8_t sdk_rf_tx_buf[RFC_TX_LL_MTU];
+#endif
 
 /*******************************************************************************************************************
 **	static Parameters
 ********************************************************************************************************************/
-#if TCFG_USER_BLE_ENABLE
+#if BT0_SUPPORT & BIT_ENUM(TR_BLE)
 static const ble_init_cfg_t ble_default_config = {
     .same_address = 0,
     .appearance = BLE_ICON,
@@ -51,7 +58,7 @@ extern void user_ble_pri_or_normal_sw(u8 status);
 extern u8 flag_user_private;
 
 
-//BLE + 2.4g 从机接收数据
+//BLE 从机接收数据
 void ble_hid_transfer_channel_recieve(uint8_t* p_attrib_value,uint16_t length)
 {
     bt_evt_rx_t evt;
@@ -102,158 +109,48 @@ bool hal_bt_is_bonded(uint8_t id, bt_t bt)
     bool ret = false;
 
     if(BT_ID0 != id) return false;
-    switch(bt){
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
-    case BT_BLE: 	
-    case BT_BLE_RF: 			//BLE模拟2.4G
-        break;
-    #endif
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
-    case BT_BLEC:
-    case BT_BLEC_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-    case BT_EDR: 	    
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
-    case BT_EDRC:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RF)
-    case BT_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RFC)
-    case BT_RFC:
-        break;
-    #endif
-    }   
-    
+    ret = bt_ble_is_bonded();
     return ret;
 }
 bool hal_bt_debond(uint8_t id, bt_t bt)
 {
-    bool ret = false;
-    api_bt_ctb_t* bt_ctbp;
+    bool ret = true;
+    api_bt_ctb_t* bt_ctbp = api_bt_get_ctb(bt);
 
     if(BT_ID0 != id) return false;
 
-	bt_ctbp = api_bt_get_ctb(bt);
-
-    switch(bt){
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
-    case BT_BLE: 	
-    case BT_BLE_RF: 			//BLE模拟2.4G
-		if(bt != BT_EDR){
-            clear_app_bond_info(bt);
-            ble_gatt_server_module_enable(0);			//断开连接
-            sdk_bt_adv_set(bt, BLE_ADV_IND);            //说明必须修改设置后再开启广播
-            
-            ble_gatt_server_module_enable(1);			//重新开启广播
-            ble_gatt_server_adv_enable(bt_ctbp->enable);
-            ret = true;
-        }
-        break;
-    #endif
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
-    case BT_BLEC:
-    case BT_BLEC_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-    case BT_EDR: 	    
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
-    case BT_EDRC:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RF)
-    case BT_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RFC)
-    case BT_RFC:
-        break;
-    #endif
-    }   
-    
+    clear_bonding_info();
+	ble_module_enable(0);
+    ble_module_enable(1);
     return ret;
 }
 bool hal_bt_disconnect(uint8_t id, bt_t bt)
 {
-    bool ret = false;
+    bool ret = true;
 
     if(BT_ID0 != id) return false;
-    switch(bt){
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
-    case BT_BLE: 	
-    case BT_BLE_RF: 			//BLE模拟2.4G
-		le_hogp_disconnect();
-        break;
-    #endif
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
-    case BT_BLEC:
-    case BT_BLEC_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-    case BT_EDR: 	    
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
-    case BT_EDRC:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RF)
-    case BT_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RFC)
-    case BT_RFC:
-        break;
-    #endif
-    }   
-    
+
+    ble_app_disconnect();
+
     return ret;
 }
 bool hal_bt_enable(uint8_t id, bt_t bt,bool en)
 {
-    bool ret = false;
+    bool ret = true;
 
     if(BT_ID0 != id) return false;
-    switch(bt){
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
-    case BT_BLE: 	
-    case BT_BLE_RF: 			//BLE模拟2.4G
-        ble_gatt_server_module_enable(en);
-        if(en) ble_gatt_server_adv_enable(en);
-        break;
-    #endif
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
-    case BT_BLEC:
-    case BT_BLEC_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-    case BT_EDR: 	    
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
-    case BT_EDRC:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RF)
-    case BT_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RFC)
-    case BT_RFC:
-        break;
-    #endif
-    }   
+
+    ble_module_enable(en);
+
+	#if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_RF))
+	if(!en != adapter_media_sel){		//adapter_media_sel 0: RF模式,1: usb模式
+		adapter_media_sel = !en;
+		adapter_process_event_notify(ADAPTER_EVENT_ODEV_MEDIA_CLOSE, 0);
+		adapter_process_event_notify(ADAPTER_EVENT_ODEV_MEDIA_OPEN, 0);
+		adapter_process_event_notify(ADAPTER_EVENT_IDEV_MEDIA_CLOSE, 0);
+		adapter_process_event_notify(ADAPTER_EVENT_IDEV_MEDIA_OPEN, 0);
+	}
+	#endif
     
     return ret;
 }
@@ -266,28 +163,14 @@ bool hal_bt_uart_tx(uint8_t id, bt_t bt,uint8_t *buf, uint16_t len)
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
     case BT_BLE: 	
     case BT_BLE_RF: 			//BLE模拟2.4G
-        return (0 == ble_hid_transfer_channel_send(buf, len));
+        ret = (0 == ble_hid_transfer_channel_send(buf, len));
         break;
     #endif
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
-    case BT_BLEC:
-    case BT_BLEC_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-    case BT_EDR: 	    
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
-    case BT_EDRC:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RF)
+    #if BT0_SUPPORT & (BIT_ENUM(TR_RF) | BIT_ENUM(TR_RFC))
     case BT_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RFC)
-    case BT_RFC:
+        sdk_rf_tx_len = MIN(len, sizeof(sdk_rf_tx_buf));
+        memcpy(sdk_rf_tx_buf, buf, sdk_rf_tx_len);      //拷贝当前发送
+        ret = true;
         break;
     #endif
     }   
@@ -304,29 +187,6 @@ bool hal_bt_hid_tx(uint8_t id, bt_t bt,uint8_t*buf, uint16_t len)
     case BT_BLE: 	
     case BT_BLE_RF: 			//BLE模拟2.4G
         ret = (0 == ble_hid_data_send(buf[0], buf+1, len-1));
-        break;
-    #endif
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
-    case BT_BLEC:
-    case BT_BLEC_RF:
-        //unsupport
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-    case BT_EDR: 
-        ret = (0 == edr_hid_data_send(buf[0], buf+1, len-1));	    
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
-    case BT_EDRC:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RF)
-    case BT_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RFC)
-    case BT_RFC:
         break;
     #endif
     }   
@@ -378,7 +238,7 @@ static void user_hid_set_reportmap (bt_t bt)
         
         if(BT_BLE == bt){
             report_mapp = ble_report_mapp;
-            #if TCFG_USER_BLE_ENABLE
+            #if BT0_SUPPORT & BIT_ENUM(TR_BLE)
             le_hogp_set_ReportMap(ble_report_mapp, map_len);
             #endif
         }else{
@@ -399,13 +259,16 @@ bool hal_bt_init(uint8_t id)
 
     if(BT_ID0 != id) return false;
 
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
+    #if BT0_SUPPORT & BIT_ENUM(TR_BLE)
     btstack_ble_start_before_init(&ble_default_config, 0);
-    #endif
-
-    #if BLE_HID_SUPPORT && TCFG_USER_BLE_ENABLE
+    #if BLE_HID_SUPPORT
     user_hid_set_reportmap (BT_BLE);
     #endif
+    #endif
+
+    //set mac set name
+    // bt_set_local_name(DEFAULT_NAME,sizeof(DEFAULT_NAME));			//设置rf名称
+    logi("bt name: %s \n", DEFAULT_NAME);
 
     return ret;
 }
@@ -414,27 +277,7 @@ bool hal_bt_deinit(uint8_t id)
     bool ret = false;
 
     if(BT_ID0 != id) return false;
-
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
-
-    #endif
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
-
-    #endif
-
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
-
-    #endif
-    
-    #if BT0_SUPPORT & BIT_ENUM(TR_RF)
-
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RFC)
-
-    #endif
+    ble_module_enable(0);
     
     return ret;
 }
