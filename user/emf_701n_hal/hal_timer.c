@@ -20,6 +20,7 @@
 
 #include "system/includes.h"
 
+#include  "api/api_log.h"
 /******************************************************************************************************
 ** Defined
 *******************************************************************************************************/
@@ -44,8 +45,8 @@
  *timer
  * */
 #if defined CONFIG_CPU_BR23
-#define _timer_init(ch,priority,us)                             \
-    request_irq(IRQ_TIME##ch##_IDX, priority, timer##ch##_isr, 0);        \
+#define _timer_init(ch,priority,us,cpu)                             \
+    request_irq(IRQ_TIME##ch##_IDX, priority, timer##ch##_isr, cpu);        \
     TIMER_SFR(ch)->CNT = 0;									    \
     TIMER_SFR(ch)->PWM = 0;                                     \             
 	TIMER_SFR(ch)->PRD = us*24UL/4;                             \
@@ -54,8 +55,8 @@
 	TIMER_SFR(ch)->CON |= BIT(0);
 
 #elif defined CONFIG_CPU_BD19 || defined CONFIG_CPU_BR28
-#define _timer_init(ch,priority,us)                             \
-    request_irq(IRQ_TIME##ch##_IDX, priority, timer##ch##_isr, 0);        \
+#define _timer_init(ch,priority,us,cpu)                             \
+    request_irq(IRQ_TIME##ch##_IDX, priority, timer##ch##_isr, cpu);        \
     TIMER_SFR(ch)->CNT = 0;									    \
     TIMER_SFR(ch)->PWM = 0;                                     \    
     TIMER_SFR(ch)->CON  = (0b110 << 10);					/*时钟源选择STD_24M时钟源*/\
@@ -134,37 +135,37 @@ static void timer5_isr(void)
 }
 #endif
 
-static void timer_init(u8 timer, u32 us)
+static void timer_init(u8 id,u8 timer, u32 us)
 {
     switch (timer) {
     case 0:
 		#if API_TIMER_BIT_ENABLE & BIT(0)
-        _timer_init(0, TIMER_PRI_ATT(0), us);
+        _timer_init(0, TIMER_PRI_ATT(id), us,TIMER_CPU_ATT(id));
 		#endif
         break;
     case 1:
 		#if API_TIMER_BIT_ENABLE & BIT(1)
-        _timer_init(1, TIMER_PRI_ATT(1), us);
+        _timer_init(1, TIMER_PRI_ATT(id), us,TIMER_CPU_ATT(id));
 		#endif
         break;
     case 2:
 		#if API_TIMER_BIT_ENABLE & BIT(2)
-        _timer_init(2, TIMER_PRI_ATT(2), us);
+        _timer_init(2, TIMER_PRI_ATT(id), us,TIMER_CPU_ATT(id));
 		#endif
         break;
     case 3:
 		#if API_TIMER_BIT_ENABLE & BIT(3)
-        _timer_init(3, TIMER_PRI_ATT(3), us);
+        _timer_init(3, TIMER_PRI_ATT(id), us,TIMER_CPU_ATT(id));
 		#endif
         break;
     case 4:
 		#if API_TIMER_BIT_ENABLE & BIT(4)
-        _timer_init(4, TIMER_PRI_ATT(4), us);
+        _timer_init(4, TIMER_PRI_ATT(id), us,TIMER_CPU_ATT(id));
 		#endif
         break;
     case 5:
 		#if API_TIMER_BIT_ENABLE & BIT(5)
-        _timer_init(5, TIMER_PRI_ATT(5), us);
+        _timer_init(5, TIMER_PRI_ATT(id), us,TIMER_CPU_ATT(id));
 		#endif
         break;
     default:
@@ -185,7 +186,7 @@ static void timer_init(u8 timer, u32 us)
 bool hal_timer_init(uint8_t id)
 {
 	uint32_t timer = m_timer_map[id].peripheral;
-	timer_init(timer, TIMER_FREQ_ATT(id));
+	timer_init(id,timer, TIMER_FREQ_ATT(id));
 	return true;
 }
 bool hal_timer_deinit(uint8_t id)
