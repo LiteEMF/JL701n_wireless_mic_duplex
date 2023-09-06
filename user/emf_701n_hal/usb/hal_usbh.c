@@ -606,7 +606,7 @@ error_t hal_usbh_driver_init(uint8_t id)
     usbh_sem_init(usb_id);
     #endif
     usb_host_config(usb_id);
-    usb_h_isr_reg(usb_id, 1, 0);
+    usb_h_isr_reg(usb_id, 1, USB_CPU);
     
 	return ERROR_SUCCESS;
 }

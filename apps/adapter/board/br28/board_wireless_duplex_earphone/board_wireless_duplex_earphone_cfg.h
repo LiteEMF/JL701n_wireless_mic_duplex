@@ -71,7 +71,7 @@
 #define USB_MALLOC_ENABLE                   0
 #define USB_PC_NO_APP_MODE                  0
 #define USB_MEM_NO_USE_OVERLAY_EN		    0
-#define USB_DEVICE_CLASS_CONFIG             0//(MIC_CLASS)
+#define USB_DEVICE_CLASS_CONFIG             0   //(MIC_CLASS | SPEAKER_CLASS)
 
 #define TCFG_USB_APPLE_DOCK_EN              0
 

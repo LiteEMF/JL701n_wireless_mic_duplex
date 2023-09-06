@@ -1051,11 +1051,13 @@ static int earphone_event_handle_callback(struct sys_event *event)
                 ret = 1;
                 break;
             case ADAPTER_EVENT_SET_MUSIC_VOL :
-                cur_music_vol = event->u.dev.value;
-                printf("vol_l=%d,vol_r=%d", cur_music_vol >> 8, cur_music_vol & 0xff);
-                //audio_fade_in_fade_out(cur_music_vol >> 8, cur_music_vol & 0xff, 1);
-                adapter_decoder_set_vol(wireless_mic_media->downdecode, BIT(0), cur_music_vol >> 8);
-                adapter_decoder_set_vol(wireless_mic_media->downdecode, BIT(1), cur_music_vol & 0xff);
+                if(cur_music_vol != event->u.dev.value){
+                    cur_music_vol = event->u.dev.value;
+                    printf("vol_l=%d,vol_r=%d", cur_music_vol >> 8, cur_music_vol & 0xff);
+                    //audio_fade_in_fade_out(cur_music_vol >> 8, cur_music_vol & 0xff, 1);
+                    adapter_decoder_set_vol(wireless_mic_media->downdecode, BIT(0), cur_music_vol >> 8);
+                    adapter_decoder_set_vol(wireless_mic_media->downdecode, BIT(1), cur_music_vol & 0xff);
+                }
                 break;
             case ADAPTER_EVENT_SET_MIC_VOL :
                 cur_mic_vol = event->u.dev.value;
@@ -1104,6 +1106,10 @@ void app_main_run(void)
 
         ASSERT(pro, "adapter_process_open fail!!\n");
         wireless_mic_media = media;
+
+        #if TCFG_PC_ENABLE && !TCFG_OTG_USB_DEV_EN && !defined LITEEMF_ENABLED
+        usb_start();
+        #endif
 
         //执行(包括事件解析、事件执行、媒体启动/停止, HID等事件转发)
         adapter_process_run(pro);

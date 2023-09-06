@@ -268,6 +268,10 @@ void app_key_event(void)
 	}else{
 		debond = false;
 	}
+
+	if(m_app_key.pressed_b & HW_KEY_HOME){
+		hal_bt_enable(BT_ID0, BT_RF,0);
+	}
 }
 
 

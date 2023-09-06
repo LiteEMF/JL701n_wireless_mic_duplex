@@ -53,7 +53,8 @@ extern "C" {
 	
 	#if GAMEPAD1	
 		#define CONFIG_DUPLEX_ROLE_SEL		1 //APP_WIRELESS_MASTER, APP_WIRELESS_SLAVE
-		#define	CPU							1
+		#define	EMF_CPU						1
+		#define	USB_CPU						1
 
 		#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15 
 
@@ -63,9 +64,11 @@ extern "C" {
 		#define TCFG_LOWPOWER_LOWPOWER_SEL			0		/*关闭修改防止定时器不准确*/
 
 		// #define API_OTG_BIT_ENABLE			BIT(0)
-		// #define API_USBD_BIT_ENABLE			BIT(0)
-		#define USBD_TYPE_SUPPORT 			(BIT_ENUM(DEV_TYPE_MSD))
-		#define USBD_RAM_DISK_ENABLE		1
+		#define API_USBD_BIT_ENABLE			BIT(0)
+		// #define USBD_TYPE_SUPPORT 			(BIT_ENUM(DEV_TYPE_MSD))
+		// #define USBD_RAM_DISK_ENABLE		1
+		#define USBD_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_AUDIO))
+		#define API_AUDIO_ENABLE			1
 		// #define USBD_TYPE_SUPPORT		(BIT_ENUM(DEV_TYPE_HID))
 		// #define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER))
 		// #define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_KB))
@@ -145,10 +148,20 @@ extern "C" {
 	#else
 		#define TCFG_OTG_MODE       0
 	#endif
-
 #else
 	#define TCFG_OTG_USB_DEV_EN     0
 #endif
+
+#if API_USBD_BIT_ENABLE
+#define TCFG_PC_ENABLE		1
+
+#if USBD_TYPE_SUPPORT & BIT_ENUM(DEV_TYPE_AUDIO)
+#define TCFG_USB_SLAVE_AUDIO_ENABLE         1
+#endif
+#endif
+
+
+
 
 
 #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF) | BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))

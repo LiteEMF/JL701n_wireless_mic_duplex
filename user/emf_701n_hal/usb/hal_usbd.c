@@ -145,8 +145,9 @@ void usb_sof_isr(const usb_dev id)
 {
     usb_sof_clr_pnd(id);
     static u32 sof_count = 0;
-    if ((sof_count++ % 1000) == 0) {
-        logd("sof 1s isr frame:%d", usb_read_sofframe(id));
+    usbd_sof_event(id);
+    if ((sof_count++ % 10000) == 0) {
+        // logd("sof 10s isr frame:%d", usb_read_sofframe(id));
     }
 }
 
@@ -257,6 +258,7 @@ void usb_stop()
 u32 usb_otg_sof_check_init(const usb_dev id)
 {
     /* return 0;// */
+	u32 ep = 0;
     usb_g_sie_init(id);
 
 #ifdef USB_HW_20
@@ -283,7 +285,7 @@ u32 usb_otg_sof_check_init(const usb_dev id)
 
     usb_set_dma_raddr(id, 0, ep0_dma_buffer);
 
-    for (int ep = 1; ep < USB_MAX_HW_EPNUM; ep++) {
+    for (ep = 1; ep < USBD_ENDP_NUM; ep++) {
         usb_disable_ep(id, ep);
     }
     usb_sof_clr_pnd(id);
@@ -403,7 +405,7 @@ error_t hal_usbd_endp_ack(uint8_t id, uint8_t ep, uint16_t len)
         break;
     }
     uint32_t reg = usb_read_csr0(id);    
-    logd("csr0=%x\n",reg);
+    // logd("csr0=%x\n",reg);
 
 	return ERROR_SUCCESS;
 }
@@ -503,6 +505,8 @@ error_t hal_usbd_out(uint8_t id, uint8_t ep, uint8_t* buf, uint16_t* plen)
 		usbd_class_t *pclass = usbd_class_find_by_ep(id, ep);
 		if(NULL != pclass){
 			if(TUSB_ENDP_TYPE_ISOCH == pclass->endpout.type ){
+                uint8_t* ep_buffer = usbd_get_endp_buffer(id, ep);
+                if(buf == ep_buffer) buf = NULL;            //非拷贝读
 				*plen = usb_g_iso_read(id, ep, buf, *plen, 0);
 			}else if(TUSB_ENDP_TYPE_BULK == pclass->endpout.type ){
                 //logd("len =%d usbd_ep_buf=%x\n",*plen,(uint32_t)usbd_ep_buf);dumpd(usbd_ep_buf, 64);
@@ -557,8 +561,8 @@ error_t hal_usbd_init(uint8_t id)
     usb_clr_intr_rxe(id, -1);
     usb_set_intr_txe(id, 0);
     usb_set_intr_rxe(id, 0);
-    usb_g_isr_reg(id, 3, 0);
-    /* usb_sof_isr_reg(id,3,0); */
+    usb_g_isr_reg(id, 3, USB_CPU);
+    usb_sof_isr_reg(id,3,USB_CPU);
     /* usb_sofie_enable(id); */
 
 	return ERROR_SUCCESS;
@@ -605,7 +609,10 @@ static uint8_t ep0_dma_buffer[USBD_ENDP0_MTU + 4] __attribute__((aligned(4))) SE
  */
 u32 usb_otg_sof_check_init(const usb_dev id)
 {
-    /* return 0;// */
+	/* return 0;// */
+    u32 ep = 0;
+
+    logd("usb_otg_sof_check_init\n");
     usb_g_sie_init(id);
 
 #ifdef USB_HW_20
@@ -632,7 +639,7 @@ u32 usb_otg_sof_check_init(const usb_dev id)
 
     usb_set_dma_raddr(id, 0, ep0_dma_buffer);
 
-    for (int ep = 1; ep < USB_MAX_HW_EPNUM; ep++) {
+    for (ep = 1; ep < USBD_ENDP_NUM; ep++) {
         usb_disable_ep(id, ep);
     }
     usb_sof_clr_pnd(id);

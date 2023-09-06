@@ -1,3 +1,4 @@
+#include "app_config.h"
 #include "adapter_dec_uac_spk.h"
 #include "adapter_decoder.h"
 #include "usb/device/uac_audio.h"
@@ -7,7 +8,7 @@
 #include "clock_cfg.h"
 #include "adapter_media.h"
 
-#if (USB_DEVICE_CLASS_CONFIG & SPEAKER_CLASS)
+#if (USB_DEVICE_CLASS_CONFIG & SPEAKER_CLASS) || (defined USBD_TYPE_SUPPORT && (USBD_TYPE_SUPPORT & BIT_ENUM(DEV_TYPE_AUDIO)))
 struct __adapter_dec_uac_spk {
     struct adapter_media_parm 		*media_parm;// 动态参数
     struct adapter_decoder_fmt  	*fmt;		// 解码参数配置

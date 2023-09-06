@@ -91,26 +91,6 @@ void mcpwm_set_hl_duty(pwm_ch_num_type pwm_ch, uint8_t timer_ch, uint8_t is_h, u
         timer_reg->tmr_con |= 0b01;
     }
 }
-void mcpwm_set_duty(pwm_ch_num_type pwm_ch, u16 duty)
-{
-    PWM_TIMER_REG *timer_reg = get_pwm_timer_reg(pwm_ch);
-    PWM_CH_REG *pwm_reg = get_pwm_ch_reg(pwm_ch);
-
-    if (pwm_reg && timer_reg) {
-        pwm_reg->ch_cmpl = timer_reg->tmr_pr * duty / 10000;
-        pwm_reg->ch_cmph = pwm_reg->ch_cmpl;
-        timer_reg->tmr_cnt = 0;
-        timer_reg->tmr_con |= 0b01;
-
-        if (duty == 10000) {
-            timer_reg->tmr_cnt = 0;
-            timer_reg->tmr_con &= ~(0b11);
-        } else if (duty == 0) {
-            timer_reg->tmr_cnt = pwm_reg->ch_cmpl;
-            timer_reg->tmr_con &= ~(0b11);
-        }
-    }
-}
 
 
 /*****************************************************************************************************

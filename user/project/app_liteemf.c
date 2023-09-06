@@ -277,7 +277,7 @@ void liteemf_app_start(void)
     emf_init();
 
     logd("start end\n");
-    os_task_create_affinity_core(emf_task_handle,NULL,2,2048,512,"emf_task",CPU);
+    os_task_create_affinity_core(emf_task_handle,NULL,2,2048,512,"emf_task",EMF_CPU);
     // task_create(emf_task_handle, NULL, TASK_NAME);
     heartbeat_msg_cnt = 0;
 

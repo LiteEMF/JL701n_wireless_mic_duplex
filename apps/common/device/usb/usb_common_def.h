@@ -109,7 +109,9 @@
 #if (USB_DEVICE_CLASS_CONFIG & AUDIO_CLASS)
 #define TCFG_USB_SLAVE_AUDIO_ENABLE         1
 #else
+#ifndef TCFG_USB_SLAVE_AUDIO_ENABLE
 #define TCFG_USB_SLAVE_AUDIO_ENABLE         0
+#endif
 #endif
 
 #if (USB_DEVICE_CLASS_CONFIG & HID_CLASS)
@@ -127,7 +129,9 @@
 #else  /* TCFG_PC_ENABLE == 0*/
 #define TCFG_USB_SLAVE_ENABLE               0
 #define TCFG_USB_SLAVE_MSD_ENABLE           0
+#ifndef TCFG_USB_SLAVE_AUDIO_ENABLE
 #define TCFG_USB_SLAVE_AUDIO_ENABLE         0
+#endif
 #define TCFG_USB_SLAVE_HID_ENABLE           0
 #define TCFG_USB_SLAVE_CDC_ENABLE           0
 #endif
