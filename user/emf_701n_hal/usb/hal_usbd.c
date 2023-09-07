@@ -46,6 +46,7 @@ uint8_t usbd_ep_buf[0x200]  __attribute__((aligned(8)));
 static struct usb_ep_addr_t usb_ep_addr  SEC(.usb_config_var);
 static uint8_t ep0_dma_buffer[USBD_ENDP0_MTU + 4] __attribute__((aligned(4))) SEC(.usb_h_dma);
 static uint8_t* m_ep_pbuffer[USBD_ENDP_NUM][2];
+static uint8_t* bulk_ep_pbuffer;        //优化内存用
 
 volatile uint8_t setup_phase = 1;
 
@@ -320,58 +321,32 @@ uint8_t *hal_usbd_get_endp_buffer(uint8_t id, uint8_t ep)
 
 error_t hal_usbd_endp_dma_init(uint8_t id)
 {
+    bulk_ep_pbuffer = NULL;
     memset(m_ep_pbuffer, 0, sizeof(m_ep_pbuffer));
     m_ep_pbuffer[0][0] = ep0_dma_buffer;
     m_ep_pbuffer[0][1] = ep0_dma_buffer;
     mem_buf_init(&usbd_mem_buf, usbd_ep_buf, sizeof(usbd_ep_buf), 8);
-
 	return ERROR_SUCCESS;
 }
 
 error_t hal_usbd_endp_open(uint8_t id, usb_endp_t *pendp)
 {
     uint8_t ep_addr = pendp->addr;
+    uint8_t ep;
     if(0 == ep_addr) return ERROR_FAILE;
-
-    if(TUSB_DIR_IN == pendp->dir){
-		switch(pendp->type){
-        case TUSB_ENDP_TYPE_ISOCH:
-            m_ep_pbuffer[ep_addr][1] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
-            usb_g_ep_config(id, ep_addr | TUSB_DIR_IN_MASK, TUSB_ENDP_TYPE_ISOCH, 1, m_ep_pbuffer[ep_addr][1], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-        case TUSB_ENDP_TYPE_BULK:
-            m_ep_pbuffer[ep_addr][1] = mem_buf_alloc(&usbd_mem_buf, 2*(pendp->mtu + 4));
-            usb_g_ep_config(id, ep_addr | TUSB_DIR_IN_MASK, TUSB_ENDP_TYPE_BULK, 1, m_ep_pbuffer[ep_addr][1], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-        case TUSB_ENDP_TYPE_INTER:
-            m_ep_pbuffer[ep_addr][1] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
-            usb_g_ep_config(id, ep_addr | TUSB_DIR_IN_MASK, TUSB_ENDP_TYPE_INTER, 1, m_ep_pbuffer[ep_addr][1], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-		}
-        logd("endp%x in open addr=%x\n",ep_addr | TUSB_DIR_IN_MASK, (uint32_t)(m_ep_pbuffer[ep_addr][1]));
-	}else{     //out
-		switch(pendp->type){
-        case TUSB_ENDP_TYPE_ISOCH:
-            m_ep_pbuffer[ep_addr][0] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
-            usb_g_ep_config(id, ep_addr , TUSB_ENDP_TYPE_ISOCH, 1, m_ep_pbuffer[ep_addr][0], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-        case TUSB_ENDP_TYPE_BULK:        //BULK out 如果和BULK in 不同时使用(比如U盘协议),可以优化共用BULK in buf
-            m_ep_pbuffer[ep_addr][0] = m_ep_pbuffer[ep_addr][1];    // mem_buf_alloc(&usbd_mem_buf, 2*(pendp->mtu + 4));
-            usb_g_ep_config(id, ep_addr, TUSB_ENDP_TYPE_BULK, 1, m_ep_pbuffer[ep_addr][0], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-        case TUSB_ENDP_TYPE_INTER:
-            m_ep_pbuffer[ep_addr][0] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
-            usb_g_ep_config(id, ep_addr, TUSB_ENDP_TYPE_INTER, 1, m_ep_pbuffer[ep_addr][0], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-		}
-        logd("endp%x out open addr=%x\n",ep_addr, (uint32_t)(m_ep_pbuffer[ep_addr][0]));
-	}
+    
+    ep = ep_addr | ((TUSB_DIR_IN == pendp->dir)? TUSB_DIR_IN_MASK:0);
+    if(NULL == hal_usbd_get_endp_buffer(id,ep)){
+        if(TUSB_ENDP_TYPE_BULK == pendp->type){ //in out共用buf
+            if(NULL == bulk_ep_pbuffer) bulk_ep_pbuffer = mem_buf_alloc(&usbd_mem_buf, 2*(pendp->mtu + 4));
+            m_ep_pbuffer[ep_addr][pendp->dir] = bulk_ep_pbuffer;
+        }else{
+            m_ep_pbuffer[ep_addr][pendp->dir] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
+        }
+    }
+    usb_g_ep_config(id, ep, pendp->type, 1, m_ep_pbuffer[ep_addr][pendp->dir], pendp->mtu);
+    usb_enable_ep(id, ep_addr);
+    logd("endp%x open addr=%x\n",ep, (uint32_t)(m_ep_pbuffer[ep_addr][pendp->dir]));
     
 	return ERROR_SUCCESS;
 }
@@ -540,11 +515,8 @@ error_t hal_usbd_set_address(uint8_t id,uint8_t address)
 
 error_t hal_usbd_init(uint8_t id)
 {
+    hal_usbd_endp_dma_init(id);
     memset(&usb_ep_addr, 0, sizeof(usb_ep_addr));
-    memset(&usbd_mem_buf, 0, sizeof(usbd_mem_buf));
-    memset(m_ep_pbuffer, 0, sizeof(m_ep_pbuffer));
-    m_ep_pbuffer[0][0] = ep0_dma_buffer;
-    m_ep_pbuffer[0][1] = ep0_dma_buffer;
 
     usb_var_init(id, &usb_ep_addr);
 
