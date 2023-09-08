@@ -69,19 +69,15 @@ void usb_isr(const usb_dev id)
     intr_rx &= intr_rxe;
 
     if (intr_usb & INTRUSB_SUSPEND) {
-        logd("usbd suspend\n");
-
-        usb_sie_close(id);
+        // usb_sie_close(id);
         usbd_suspend_event(id);
     }
     if (intr_usb & INTRUSB_RESET_BABBLE) {
-        logd("usbd reset\n");
+        u32 reg = usb_read_power(id);
+        usb_write_power(id, (reg | INTRUSB_SUSPEND | INTRUSB_RESUME));//enable suspend resume
         usbd_reset_event(id);
-        // u32 reg = usb_read_power(id);
-        // usb_write_power(id, (reg | INTRUSB_SUSPEND | INTRUSB_RESUME));//enable suspend resume
     }
     if (intr_usb & INTRUSB_RESUME) {
-        logd("usbd resume\n");
         usbd_resume_event(id);
     }
 
@@ -126,19 +122,20 @@ void usb_isr(const usb_dev id)
                 usbd_endp_in_event(id, 0x80);
             }
         }
-    }else{
-        for (int i = 1; i < USBD_ENDP_NUM; i++) {
-            if (intr_tx & BIT(i)) {
-                usbd_endp_in_event(id, TUSB_DIR_IN_MASK | i);
-            }
-        }
-
-        for (int i = 1; i < USBD_ENDP_NUM; i++) {
-            if (intr_rx & BIT(i)) {
-                usbd_endp_out_event(id, i, usb_read_rxcount(id, i));
-            }
+    }
+    
+    for (int i = 1; i < USBD_ENDP_NUM; i++) {
+        if (intr_tx & BIT(i)) {
+            usbd_endp_in_event(id, TUSB_DIR_IN_MASK | i);
         }
     }
+
+    for (int i = 1; i < USBD_ENDP_NUM; i++) {
+        if (intr_rx & BIT(i)) {
+            usbd_endp_out_event(id, i, usb_read_rxcount(id, i));
+        }
+    }
+
     __asm__ volatile("csync");
 }
 
