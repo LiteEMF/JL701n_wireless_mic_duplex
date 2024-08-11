@@ -66,6 +66,7 @@
 #endif
 
 
+AT(.volatile_ram_code)
 uint8_t get_timer_id (uint8_t timer)
 {
     uint8_t i;

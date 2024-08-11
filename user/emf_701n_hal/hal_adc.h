@@ -13,6 +13,7 @@
 #ifndef _hal_adc_h
 #define _hal_adc_h
 #include "emf_typedef.h" 
+#include "asm/adc_api.h"
 
 #ifdef __cplusplus
 extern "C" {

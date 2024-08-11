@@ -13,6 +13,11 @@
 #if API_BT_ENABLE
 #include "api/bt/api_bt.h"
 #include "api/api_log.h"
+#if API_PM_ENABLE
+#include "api/api_pm.h"
+#endif
+
+
 
 #include "btcontroller_config.h"
 #include "btctrler/btctrler_task.h"
@@ -177,7 +182,8 @@ bool hal_bt_uart_tx(uint8_t id, bt_t bt,uint8_t *buf, uint16_t len)
     
     return ret;
 }
-bool hal_bt_hid_tx(uint8_t id, bt_t bt,uint8_t*buf, uint16_t len)
+
+bool hal_bt_hid_tx(uint8_t id,bt_t bt, uint8_t hid_requset, uint8_t*buf, uint16_t len)
 {
     bool ret = false;
 

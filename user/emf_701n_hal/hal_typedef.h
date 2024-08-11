@@ -21,6 +21,7 @@ extern "C" {
 
 #define __STDBOOL_H         //杰里不调用stdbool
 #define	_STDIO_H_			//杰里不调用stdbio
+#define _LIST_H				//杰里自带list.h
 
 typedef struct list_head list_head_t;
 #define list_for_each_entry_type(pos, head, type, member) 	list_for_each_entry(pos, head, member) 

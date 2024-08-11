@@ -72,6 +72,12 @@ void hal_delay_ms(uint32_t ms)
 {
 	delay(1000*ms);
 }
+
+void hal_os_delay_ms(uint32_t ms)
+{
+	os_time_dly(1);
+}
+
 void hal_tick_init(void)
 {	
 	sys_freq = hal_get_sysclk(SYSCLK);

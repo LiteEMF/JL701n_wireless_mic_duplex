@@ -14,7 +14,7 @@
 ************************************************************************************************************/
 #include "hw_config.h"
 #include "hw_board.h"
-#ifdef HW_IIC_MAP
+#ifdef HW_IIC_MAP && !IIC_SOFT_ENABLE
 
 #include  "api/api_iic_host.h"
 #include  "api/api_gpio.h"
@@ -63,6 +63,23 @@ struct iic_iomapping {
 ** Returns:	
 ** Description:		
 *******************************************************************/
+bool hal_iic_scan_addr(uint8_t id,uint8_t dev_addr)
+{
+	uint8_t ret;
+	
+	hw_iic_start(IIC_DEV_ID);
+	ret = hw_iic_tx_byte(IIC_DEV_ID, dev_addr);
+	hw_iic_stop(IIC_DEV_ID);  
+	api_delay_us(30); 	//stop后需要delay一段时间后再start,JL6321必要的延时,两次通信之间至少20us
+
+	return ret;
+}
+
+/*******************************************************************
+** Parameters:		
+** Returns:	
+** Description:		
+*******************************************************************/
 bool hal_iic_write(uint8_t id,uint8_t dev_addr,uint16_t addr, uint8_t const *buf, uint16_t len)
 {
 	uint8_t ret, i;
@@ -90,7 +107,7 @@ bool hal_iic_write(uint8_t id,uint8_t dev_addr,uint16_t addr, uint8_t const *buf
 
 err:
 	hw_iic_stop(IIC_DEV_ID);  
-	delay_us(30); 	//stop后需要delay一段时间后再start,JL6321必要的延时,两次通信之间至少20us
+	api_delay_us(30); 	//stop后需要delay一段时间后再start,JL6321必要的延时,两次通信之间至少20us
 
 	return ret;
 }
@@ -123,7 +140,7 @@ bool hal_iic_read(uint8_t id,uint8_t dev_addr,uint16_t addr, uint8_t* buf, uint1
 
 err:
 	hw_iic_stop(IIC_DEV_ID);
-	delay_us(30);  	//stop后需要delay一段时间后再start,必要的延时,两次通信之间至少20us
+	api_delay_us(30);  	//stop后需要delay一段时间后再start,必要的延时,两次通信之间至少20us
 
 	return ret;
 }

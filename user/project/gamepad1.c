@@ -92,92 +92,33 @@ void usbh_class_itf_alt_select(uint8_t id,usbh_class_t* pclass)
 }
 #endif
 
-#if API_USBD_BIT_ENABLE
 
-char* usbd_user_get_string(uint8_t id, uint8_t index)
+bool app_command_vendor_decode(trp_handle_t *phandle,uint8_t* buf,uint16_t len)
 {
-	char *pstr = NULL;
+	bool ret = false;
+	command_head_t *phead = (command_head_t*)buf;
+	uint8_t replay[16];
+	app_gamepad_key_t key;
 
-	if(2 == index){		//product string
-		if(m_usbd_types[id] & BIT(DEV_TYPE_HID)){
-			if(m_usbd_hid_types[id] & HID_SWITCH_MASK){
-				pstr = "Pro Controller";
-			}else if(m_usbd_hid_types[id] & HID_PS_MASK){
-				pstr = "Wireless Controller";
-			}else if(m_usbd_hid_types[id] & HID_XBOX_MASK){
-				pstr = "Controller";
-			}else if(m_usbd_hid_types[id] & BIT(HID_TYPE_GAMEPADE)){
-				pstr = "Hid Gamepade";
-			}else if(m_usbd_hid_types[id] & (BIT(HID_TYPE_MT) | BIT(HID_TYPE_TOUCH))){
-				pstr = "Touch Screen";
-			}else if(m_usbd_hid_types[id] & BIT(HID_TYPE_MOUSE)){
-				pstr = "mouse";
-			}else if(m_usbd_hid_types[id] & BIT(HID_TYPE_KB)){
-				pstr = "keyboard";
-			}else if(m_usbd_hid_types[id] & BIT(HID_TYPE_VENDOR)){
-				pstr = "Hid Vendor";
-			}
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_IAP2)){
-			pstr = "iap";
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_MSD)){
-			pstr = "msd";
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_PRINTER)){
-			pstr = "printer";
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_CDC)){
-			pstr = "cdc";
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_AUDIO)){
-			pstr = "uac";
-		}else{
-			pstr = (char*)usbd_string_desc[index];
-		}
+	switch(phead->cmd){
+	case CMD_MUSIC_VOL:
+		#if BT0_SUPPORT & BIT_ENUM(TR_RF)
+		uint16_t music_vol = (phead->buf[0] << 8) | phead->buf[1];
+		uint16_t mic_vol = phead->buf[2] & 0xffff;
+		adapter_music_vol(music_vol, mic_vol);
+		#endif
+		break;
 	}
-		
-	return pstr;
-}
-void usbd_user_set_device_desc(uint8_t id, usb_desc_device_t *pdesc)
-{
-	if(m_usbd_types[id] & BIT(DEV_TYPE_HID)){
-		if(m_usbd_hid_types[id] & HID_SWITCH_MASK){
-			#if USBD_HID_SUPPORT & HID_SWITCH_MASK
-			pdesc->idVendor = SWITCH_VID;
-			pdesc->idProduct = SWITCH_PID;
-			#endif
-		}else if(m_usbd_hid_types[id] & HID_PS_MASK){
-			#if USBD_HID_SUPPORT & HID_PS_MASK
-			pdesc->idVendor = PS_VID;
-			if(m_usbd_hid_types[id] & BIT(HID_TYPE_PS3)){
-				pdesc->idProduct = PS3_PID;
-			}else{
-				pdesc->idProduct = PS4_PID;
-			}
-			#endif
-		}else if(m_usbd_hid_types[id] & BIT_ENUM(HID_TYPE_XBOX)){
-			#if USBD_HID_SUPPORT & BIT_ENUM(HID_TYPE_XBOX)
-			pdesc->idVendor = XBOX_VID;	//0xFF,0x47,0xD0
-			pdesc->idProduct = XBOX_PID;
-			pdesc->bDeviceClass       = 0xFF;
-			pdesc->bDeviceSubClass    = 0x47;
-			pdesc->bDeviceProtocol    = 0xD0;
-			#endif
-		}else if(m_usbd_hid_types[id] == BIT_ENUM(HID_TYPE_X360)){		//xinput 复合设备使用自定义vid
-			#if USBD_HID_SUPPORT & BIT_ENUM(HID_TYPE_X360)
-			pdesc->idVendor = XBOX_VID;	//0xFF,0x47,0xD0
-			pdesc->idProduct = X360_PID;	//0xff, 0xff, 0xff
-			pdesc->bDeviceClass       = 0xFF;
-			pdesc->bDeviceSubClass    = 0xff;
-			pdesc->bDeviceProtocol    = 0xff;
-			#endif
-		}
+	if(!ret){
+		ret = app_command_std_decode(phandle,buf,len);
 	}
+	return ret;
 }
 
-#endif
 
 
 #if BT0_SUPPORT & (BIT_ENUM(TR_RF) | BIT_ENUM(TR_RFC))
 
-static uint8_t s_cmd_buf[32];
-static uint8_t s_cmd_len = 0;
 void api_bt_rx(uint8_t id,bt_t bt, bt_evt_rx_t* pa)
 {
     // logd("weak bt%d rx:%d \n",bt,pa->len);    //dumpd(pa->buf,pa->len);
@@ -198,24 +139,9 @@ void api_bt_rx(uint8_t id,bt_t bt, bt_evt_rx_t* pa)
 // return;
 	if(BT_UART == pa->bts){					//uart
 		uint8_t i;
-		command_rx_t rx;
+		trp_handle_t rf_handle = {TR_RF, BT_ID0, U16(DEV_TYPE_VENDOR,0)};
 		for(i=0; i<pa->len; i++){
-			if(api_command_rx_byte(&rx, mtu, pa->buf[i], s_cmd_buf, &s_cmd_len)){
-				logd("decode %d:",rx.len); dumpd(rx.pcmd, rx.len);
-				switch(rx.pcmd[3]){
-					case CMD_MUSIC_VOL:{
-						#if BT0_SUPPORT & BIT_ENUM(TR_RF)
-						uint16_t music_vol = (rx.pcmd[4] << 8) | rx.pcmd[5];
-						uint16_t mic_vol = rx.pcmd[6] & 0xffff;
-						adapter_music_vol(music_vol, mic_vol);
-						#endif
-						break;
-					}
-					default:
-						break;
-				}
-				command_rx_free(&rx);
-			}
+			app_command_rx_byte(&rf_handle, pa->buf[i]);
 		}
 	}
 }
@@ -310,26 +236,10 @@ void user_vender_deinit(void)			//关机前deinit
 {
 }
 
-void user_vender_handler(void)
+void user_vender_handler(uint32_t period_10us)
 {
 	//rx uart
     static timer_t timer;
-
-    #ifdef HW_UART_MAP
-    app_fifo_t *fifop = api_uart_get_rx_fifo(1);
-    uint8_t c;
-	command_rx_t rx;
-	static uint8_t s_cmd_buf[UART_CMD_MTU];
-	static uint8_t s_cmd_len = 0;
-    
-    while(ERROR_SUCCESS == app_fifo_get(fifop, &c)){
-        // logd("%x",c);
-		// if(api_command_rx_byte(&rx, UART_CMD_MTU, c, s_cmd_buf, &s_cmd_len)){
-		// 	logd("uart cmd %d:",rx.len); dumpd(rx.pcmd, rx.len);
-		// 	command_rx_free(&rx);
-		// }
-    }
-    #endif
 
     // // adc test 
     // static timer_t adc_times = 0;
@@ -358,7 +268,7 @@ void user_vender_handler(void)
 		#if BLE_HID_SUPPORT
 		api_bt_ctb_t* bt_ctbp = api_bt_get_ctb(BT_BLE);
 		trp_handle_t ble_handle = {TR_BLE, BT_ID0, U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB)};
-		ready |= BOOL_SET(bt_ctbp->sta == BT_STA_READY); 
+		ready |= BOOL_SET(bt_ctbp->hid_ready); 
 		#endif
 		
 		if(ready){
@@ -411,7 +321,7 @@ void user_vender_handler(void)
 		rf_ctbp = api_bt_get_ctb(BT_RFC);
 		#endif
 
-		if(rf_ctbp->sta == BT_STA_READY){
+		if(rf_ctbp->vendor_ready){
 			static uint32_t buf = 0;
 			buf++;
 

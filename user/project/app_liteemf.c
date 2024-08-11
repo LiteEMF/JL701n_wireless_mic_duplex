@@ -23,7 +23,7 @@
 #include "update_loader_download.h"
 #include "app/emf.h"
 #include "api/api_log.h"
-#include  "app/app_command.h"
+#include  "app/app_commander.h"
 #if API_USBD_BIT_ENABLE
 #include "api/usb/device/usbd.h"
 #endif
@@ -107,8 +107,8 @@ bool rf_command_send(uint8_t cmd, uint8_t*pbuf, uint16_t len)
     rf_handle.trp = BT_RFC;
     #endif
 
-    if(rf_ctbp->sta == BT_STA_READY){
-        ret = api_command_tx(&rf_handle,cmd, pbuf, len);
+    if(rf_ctbp->sta == BT_STA_CONN){
+        ret = app_command_tx(&rf_handle,cmd, pbuf, len);
     }
     #endif
 

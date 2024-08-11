@@ -12,6 +12,7 @@
 
 #ifndef _hw_board_h
 #define _hw_board_h
+#include "hw_config.h"
 #include "utils/emf_defined.h"
 
 #ifdef __cplusplus

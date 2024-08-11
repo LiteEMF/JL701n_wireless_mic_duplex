@@ -44,7 +44,7 @@
 mem_buf_t usbd_mem_buf;
 uint8_t usbd_ep_buf[0x200]  __attribute__((aligned(8)));
 static struct usb_ep_addr_t usb_ep_addr  SEC(.usb_config_var);
-static uint8_t ep0_dma_buffer[USBD_ENDP0_MTU + 4] __attribute__((aligned(4))) SEC(.usb_h_dma);
+static uint8_t ep0_dma_buffer[USBD_ENDP0_MTU + 8] __attribute__((aligned(4))) SEC(.usb_h_dma);
 static uint8_t* m_ep_pbuffer[USBD_ENDP_NUM][2];
 static uint8_t* bulk_ep_pbuffer;        //优化内存用
 
@@ -76,6 +76,7 @@ void usb_isr(const usb_dev id)
         u32 reg = usb_read_power(id);
         usb_write_power(id, (reg | INTRUSB_SUSPEND | INTRUSB_RESUME));//enable suspend resume
         usbd_reset_event(id);
+        setup_phase = 1;
     }
     if (intr_usb & INTRUSB_RESUME) {
         usbd_resume_event(id);
@@ -354,24 +355,29 @@ error_t hal_usbd_endp_close(uint8_t id, uint8_t ep)
 }
 error_t hal_usbd_endp_ack(uint8_t id, uint8_t ep, uint16_t len)
 {
+    usbd_req_t *preq = usbd_get_req(id);
+    int16_t resolve_len;
+    bool overflag = (preq->req.wLength > preq->setup_len)? true : false;
+    
+    resolve_len = preq->setup_len - preq->setup_index - len;
+
 	switch (ep) {
     case 0x80:
-        if(0 == len){
-            usbd_req_t *preq = usbd_get_req(id);
-            if(USB_DIR_OUT == preq->req.bmRequestType.bits.direction){
-                usb_ep0_RxPktEnd(id);                       //0x08:out包最后的in ack
-                setup_phase = 1;
-            }else{
-                usb_ep0_TxPktEnd(id);                       //0x0a:in包最后的 out ack
-            }
-        }else if(len < USBD_ENDP0_MTU){
-            usb_ep0_TxPktEnd(id);                           //0x0a:in包最后的 out ack
+        if(0 == len){                                   //严格按杰里流程处理
+            usb_ep0_TxPktEnd(id);
+        }else if(resolve_len || overflag){
+            usb_write_csr0(id, CSR0P_TxPktRdy);         //0x02:in ack
         }else{
-            usb_write_csr0(id, CSR0P_TxPktRdy);             //0x02:in ack
+            usb_ep0_TxPktEnd(id);                       //0x0a:in包最后的 out ack
         }
         break;
     case 0x00:
-        usb_ep0_ClrRxPktRdy(id);                            //out 包清除rx RxPktRdy会自动进行接收数据
+        if(resolve_len){
+            usb_ep0_ClrRxPktRdy(id);                    //out 包清除rx RxPktRdy会自动进行接收数据
+        }else if(0 == len){                             //注意out最后一包数据不发ack,在in包中处理
+            usb_ep0_RxPktEnd(id);                       //0x08:out包最后的in ack
+            setup_phase = 1;
+        }
         break;
     default:
         break;
@@ -429,18 +435,28 @@ error_t hal_usbd_in(uint8_t id, uint8_t ep, uint8_t* buf,uint16_t len)
 
     if(0 == ep_addr){
         usbd_req_t *preq = usbd_get_req(id);
+        
+        if(TUSB_DIR_OUT == preq->req.bmRequestType.bits.direction){
+            err = hal_usbd_endp_ack(id, 0x00, 0);           //杰里特殊在out端点处理, out最后一包发送 IN ACK
+        }else{
+            if(preq->setup_index <= preq->setup_len){
+                bool overflag = (preq->req.wLength > preq->setup_len)? true : false;    //需要按照杰里例程判断主机请求数据长度条件判断发送最后一包数据 的 out
 
-        if(preq->setup_index <= preq->setup_len){
-            send_len = preq->setup_len - preq->setup_index;
-            send_len = (send_len >= USBD_ENDP0_MTU) ? USBD_ENDP0_MTU : send_len; //本次传输长度
-			usb_write_ep0(id, (void*)(preq->setup_buf+preq->setup_index), send_len);
-            //logd("ep%x,in%d:",ep,send_len);dumpd((void*)(preq->setup_buf+preq->setup_index), send_len);
-            preq->setup_index += send_len;
+                send_len = preq->setup_len - preq->setup_index;
+                send_len = (send_len >= USBD_ENDP0_MTU) ? USBD_ENDP0_MTU : send_len; //本次传输长度
+                usb_write_ep0(id, (void*)(preq->setup_buf+preq->setup_index), send_len);
+                //logd("ep%x,in%d:",ep,send_len);dumpd((void*)(preq->setup_buf+preq->setup_index), send_len);
+                
+                err = hal_usbd_endp_ack(id, ep, send_len);  
+                preq->setup_index += send_len;
 
-            err = hal_usbd_endp_ack(id, ep, send_len);             
-            if(USBD_ENDP0_MTU != send_len){                         //判断发送最后一包数据 的 out
-                usbd_free_setup_buffer(preq);                       //发送完成释放内存
-                // hal_usbd_endp_ack(id, 0x00, 0);                  //杰里在hal_usbd_endp_ack(id, 80,len)中设置 out ack
+
+                if(0 == send_len){                          //严格按杰里流程处理
+                    usbd_free_setup_buffer(preq);           //发送完成释放内存
+                }else if((preq->setup_len > preq->setup_index) || overflag){
+                }else{
+                    usbd_free_setup_buffer(preq);           //杰里没over直接结束
+                }
             }
         }
     }else{
@@ -468,11 +484,11 @@ error_t hal_usbd_out(uint8_t id, uint8_t ep, uint8_t* buf, uint16_t* plen)
 	ep &= 0x7f;
 
 	if(0 == ep){
+        usbd_req_t *preq = usbd_get_req(id);
+
     	usb_read_ep0(id, buf, *plen);
         //logd("ep%d out%d:",ep,*plen);dumpd(buf, *plen);
-        if(USBD_ENDP0_MTU == *plen){            //如果还有数据就继续接收
-            hal_usbd_endp_ack(id, 0, 0);
-        }
+        hal_usbd_endp_ack(id, 0, *plen);
 	}else{
 		usbd_class_t *pclass = usbd_class_find_by_ep(id, ep);
 		if(NULL != pclass){
@@ -481,10 +497,7 @@ error_t hal_usbd_out(uint8_t id, uint8_t ep, uint8_t* buf, uint16_t* plen)
                 if(buf == ep_buffer) buf = NULL;            //非拷贝读
 				*plen = usb_g_iso_read(id, ep, buf, *plen, 0);
 			}else if(TUSB_ENDP_TYPE_BULK == pclass->endpout.type ){
-                //logd("len =%d usbd_ep_buf=%x\n",*plen,(uint32_t)usbd_ep_buf);dumpd(usbd_ep_buf, 64);
-                // usb_clr_intr_rxe(id, ep);
 				*plen = usb_g_bulk_read(id, ep, buf, *plen, 1);
-                // usb_set_intr_rxe(id, ep);
 			}else{
 				*plen = usb_g_intr_read(id, ep, buf, *plen, 0);
 			}
@@ -497,9 +510,7 @@ error_t hal_usbd_out(uint8_t id, uint8_t ep, uint8_t* buf, uint16_t* plen)
 error_t hal_usbd_reset(uint8_t id)
 {
 	hal_usbd_deinit(id);
-
-	os_time_dly(1);
-
+    api_delay_ms(1);		//usd while(1) delay
 	hal_usbd_init(id);
 
 	return ERROR_SUCCESS;

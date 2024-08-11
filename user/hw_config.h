@@ -24,7 +24,7 @@ extern "C" {
 *******************************************************************************************************/
 #define HEAP_ID						0					/* used heap_n file*/
 #define LOG_ENABLE                  1
-#define CRC8_TABLE_EANBLE 			0					/*杰里默认有crc8校验*/
+#define CRC8_EANBLE 			0					/*杰里默认有crc8校验*/
 
 //sdk modules disable
 #define TCFG_ADKEY_ENABLE					0
@@ -58,7 +58,7 @@ extern "C" {
 
 		#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15 
 
-
+		#define APP_CMD_ENABLE			1
 		#define APP_KEY_ENABLE			1
 		#define API_WDT_ENABLE			0
 		#define TCFG_LOWPOWER_LOWPOWER_SEL			0		/*关闭修改防止定时器不准确*/

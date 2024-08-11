@@ -19,7 +19,6 @@
 #include  "api/api_pwm.h"
 #include  "api/api_gpio.h"
 
-#include "asm/mcpwm.h"
 #include "asm/clock.h"
 #include "system/includes.h"
 
@@ -37,18 +36,18 @@ AC695 芯片定义:
 // static u8 pwm_hw_h_pin[6] = {IO_PORTA_00, IO_PORTB_00, IO_PORTB_04, IO_PORTB_09, IO_PORTA_09, IO_PORTC_04};
 // static u8 pwm_hw_l_pin[6] = {IO_PORTA_01, IO_PORTB_02, IO_PORTB_06, IO_PORTB_10, IO_PORTA_10, IO_PORTC_05};
 #define HW_PWM_MAP {	\
-			{PA_01,   pwm_timer0,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch0|PWM_CH_H)|VAL2FLD(PWM_ACTIVE,1)},\
-			{PB_00,   pwm_timer1,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1),VAL2FLD(PWM_ACTIVE,1)},\
-			{PB_02,   pwm_timer1,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1|PWM_CH_H)},\
-			{PB_06,   pwm_timer2,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch2),VAL2FLD(PWM_ACTIVE,1)},\
+			{PA_01,   pwm_timer0,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch0) | VAL2FLD(PWM_HL, 1))|VAL2FLD(PWM_ACTIVE,1)},\
+			{PB_00,   pwm_timer1,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1) | VAL2FLD(PWM_ACTIVE,1)},\
+			{PB_02,   pwm_timer1,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1) | VAL2FLD(PWM_HL, 1)},\
+			{PB_06,   pwm_timer2,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch2) | VAL2FLD(PWM_ACTIVE,1)},\
 			}
 
 sdk AC6321/701n 芯片定义:
 #define HW_PWM_MAP {	\
-			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch0|PWM_CH_H)},\
+			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch0) | VAL2FLD(PWM_HL, 1)},\
 			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1)},\
-			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1|PWM_CH_H)|VAL2FLD(PWM_ACTIVE,1)},\
-			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch2)|VAL2FLD(PWM_ACTIVE,1)},\
+			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1)| VAL2FLD(PWM_HL, 1)|VAL2FLD(PWM_ACTIVE,1)},\
+			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch2)| VAL2FLD(PWM_ACTIVE,1)},\
 			}   
 */
 
@@ -111,7 +110,7 @@ bool hal_pwm_set_duty(uint16_t id, uint8_t duty)
     uint8_t timer_ch = m_pwm_map[id].peripheral;
     #endif
 
-    if(PWM_CH_ATT(id) & PWM_CH_H){
+    if(PWM_HL_ATT(id)){
         mcpwm_set_hl_duty(PWM_CH_ATT(id), timer_ch, 1, duty*10000UL/255UL);
     }else{ 
         mcpwm_set_hl_duty(PWM_CH_ATT(id), timer_ch, 0, duty*10000UL/255UL);
@@ -125,13 +124,16 @@ bool hal_pwm_init(uint16_t id, uint8_t duty)
 
     pwm_p_data.pwm_aligned_mode = pwm_edge_aligned;         // 边沿对齐
     pwm_p_data.frequency = PWM_FREQ_ATT(id);                // 频率
+    if(0 == pwm_p_data.frequency){
+        pwm_p_data.frequency = PWM_FREQ_DEFAULT;
+    }
     pwm_p_data.duty = duty*10000UL/255UL;                   // 占空比
     pwm_p_data.pwm_ch_num = PWM_CH_ATT(id);                 // 外设通道, pwm_ch0, pwm_ch1...
     #if defined CONFIG_CPU_BR23
     pwm_p_data.pwm_timer_num = m_pwm_map[id].peripheral;    // 时基选择,  timer1, timer2...
     #endif
 
-    if(PWM_CH_ATT(id) & PWM_CH_H){
+    if(PWM_HL_ATT(id)){
         #if defined CONFIG_CPU_BR23
         pwm_p_data.h_pin_output_ch_num = 2;
         #endif

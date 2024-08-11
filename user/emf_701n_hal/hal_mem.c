@@ -52,5 +52,5 @@ void hal_free(void* p)
 *******************************************************************/
 void hal_mem_stats(void)
 {
-
+	mem_stats();
 }

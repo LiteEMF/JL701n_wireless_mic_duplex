@@ -22,6 +22,16 @@ extern "C" {
 **	Hardware  Defined
 ********************************************************************************************************************/
 #define CFG_RF_24G_CODE_ID  	(0x28)
+
+//选择物理层
+#ifndef SELECT_BLE_RF_PHY
+#define  SELECT_BLE_RF_PHY                 CONN_SET_1M_PHY//1M:CONN_SET_1M_PHY 2M:CONN_SET_2M_PHY CODED:CONN_SET_CODED_PHY
+#endif
+//选择CODED类型:S2 or S8
+#ifndef SELECT_BLE_RF_CODED_S2_OR_S8
+#define  SELECT_BLE_RF_CODED_S2_OR_S8      CONN_SET_PHY_OPTIONS_S2//S2:CONN_SET_PHY_OPTIONS_S2 S8:CONN_SET_PHY_OPTIONS_S8
+#endif
+
 /*******************************************************************************************************************
 **	Parameters
 ********************************************************************************************************************/
@@ -35,6 +45,7 @@ extern "C" {
 **	Functions
 ********************************************************************************************************************/
 extern int sys_bt_event_handler(struct sys_event *event);
+extern bool hal_bt_select_phy(uint16_t handle);
 
 #ifdef __cplusplus
 }

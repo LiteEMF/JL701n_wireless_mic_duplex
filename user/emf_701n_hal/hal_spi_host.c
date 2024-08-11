@@ -14,11 +14,11 @@
 ************************************************************************************************************/
 #include "hw_config.h"
 #include "hw_board.h"
-#ifdef HW_SPI_HOST_MAP
+#ifdef HW_SPI_HOST_MAP  && !SPI_SOFT_ENABLE
 
 #include  "api/api_spi_host.h"
 #include  "api/api_gpio.h"
-
+#include  "api/api_log.h"
 /******************************************************************************************************
 ** Defined
 *******************************************************************************************************/
@@ -136,13 +136,13 @@ bool hal_spi_host_init(uint8_t id)
 	for(uint8_t i=0; i<spi_io_map[spi].num; i++){
 		if(m_spi_map[id].clk == spi_io_map[spi].io->clk_pin){
 			pspi->port = 'A' + i;
+			break;
 		}
 	}	
 	#endif
 	pspi->mode = SPI_MODE_ATT(id);
 	pspi->clk = badu;
 	pspi->role = SPI_ROLE_MASTER;
-
 	return !spi_open(m_spi_map[id].peripheral);
 }
 bool hal_spi_host_deinit(uint8_t id)

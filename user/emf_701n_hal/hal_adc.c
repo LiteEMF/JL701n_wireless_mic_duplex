@@ -17,7 +17,7 @@
 #ifdef HW_ADC_MAP
 #include  "api/api_adc.h"
 
-#include "asm/adc_api.h"
+
 /******************************************************************************************************
 ** Defined
 *******************************************************************************************************/
@@ -71,11 +71,15 @@ bool hal_adc_init(void)
 	for(id=0; id<m_adc_num; id++){
 		gpio_set_die(m_adc_map[id].pin, 0);
 		gpio_set_direction(m_adc_map[id].pin, 1);
-		gpio_set_pull_down(m_adc_map[id].pin, 0);
-		if(ADC_PULL_ATT(id)){
-			gpio_set_pull_up(m_adc_map[id].pin, 0);
-		}else{
+		if(PIN_PULLUP == ADC_PULL_ATT(id)){
 			gpio_set_pull_up(m_adc_map[id].pin, 1);
+			gpio_set_pull_down(m_adc_map[id].pin, 0);
+		}else if(PIN_PULLDOWN == ADC_PULL_ATT(id)){
+			gpio_set_pull_up(m_adc_map[id].pin, 0);
+			gpio_set_pull_down(m_adc_map[id].pin, 1);
+		}else{
+			gpio_set_pull_up(m_adc_map[id].pin, 0);
+			gpio_set_pull_down(m_adc_map[id].pin, 0);
 		}
 
 		adc_add_sample_ch(ADC_CH_ATT(id));

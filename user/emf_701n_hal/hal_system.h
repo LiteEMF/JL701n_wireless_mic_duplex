@@ -13,6 +13,7 @@
 #ifndef _hal_system_h
 #define _hal_system_h
 #include "emf_typedef.h" 
+#include "os/os_cpu.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +34,9 @@ extern "C" {
 #define API_EXIT_CRITICAL()		OS_EXIT_CRITICAL()
 #endif
 
+#ifndef AT_RAM_CODE()
+#define AT_RAM_CODE()		AT(.volatile_ram_code)
+#endif
 
 /******************************************************************************************************
 **	Parameters

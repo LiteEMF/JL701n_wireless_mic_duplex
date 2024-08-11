@@ -226,7 +226,7 @@ static void standard_connection_update_complete_success(u8 *packet, u8 connected
         bt_ctbp = api_bt_get_ctb(BT_BLE);
     }
     if(NULL != bt_ctbp){
-        bt_ctbp->inteval = conn_interval;
+        bt_ctbp->inteval_10us = 125 * conn_interval;
     }
     #endif
     if (connected_init) {

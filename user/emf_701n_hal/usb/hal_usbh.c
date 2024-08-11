@@ -58,7 +58,7 @@ static int usbh_sem_init(usb_dev usb_id)
     OS_SEM *sem = zalloc(sizeof(OS_SEM));
     ASSERT(sem, "usb alloc sem error");
     usb_host_sem[usb_id] = sem;
-    logd_g("%s %x %x ", __func__, usb_id, sem);
+    logd("%s %x %x ", __func__, usb_id, sem);
     os_sem_create(usb_host_sem[usb_id], 0);
     return 0;
 }

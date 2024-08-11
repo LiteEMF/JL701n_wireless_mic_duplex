@@ -38,6 +38,19 @@
 		"os_error.h": "c",
 		"emf_config.h": "c",
 		"hw_board.h": "c",
-		"api_tick.h": "c"
+		"api_tick.h": "c",
+		"usb_typedef.h": "c",
+		"usbh_class.h": "c",
+		"usbh_core.h": "c",
+		"uac_audio.h": "c",
+		"hw_config.h": "c",
+		"adapter_decoder.h": "c",
+		"adapter_dec_uac_spk.h": "c",
+		"adapter_audio_stream.h": "c",
+		"uac_stream.h": "c",
+		"adapter_media.h": "c",
+		"usbd.h": "c",
+		"usbd_core.h": "c",
+		"app_commander.h": "c"
 	}
 }
